@@ -29,7 +29,7 @@ public:
     }
     
     Maths::Vec3   pointAtParam(float t) const {
-        return m_origin * m_direction;
+        return m_origin + t * m_direction;
     }
     
 private:

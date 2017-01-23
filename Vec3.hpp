@@ -30,14 +30,14 @@ namespace Maths {
         Vec3 operator - () const;
         
         // maths operators -  (non cost this, const vec || float scalar)
-        Vec3 & operator + (Vec3 const & vec);
-        Vec3 & operator - (Vec3 const & vec);
-        Vec3 & operator * (Vec3 const & vec);
-        Vec3 & operator / (Vec3 const & vec);
-        Vec3 & operator + (float scalar);
-        Vec3 & operator - (float scalar);
-        Vec3 & operator * (float scalar);
-        Vec3 & operator / (float scalar);
+        Vec3 operator + (Vec3 const & vec);
+        Vec3 operator - (Vec3 const & vec);
+        Vec3 operator * (Vec3 const & vec);
+        Vec3 operator / (Vec3 const & vec);
+        Vec3 operator + (float scalar);
+        Vec3 operator - (float scalar);
+        Vec3 operator * (float scalar);
+        Vec3 operator / (float scalar);
 
         // assignment operators (Vec3 [operator] Vec3)
         Vec3 & operator += (Vec3 const & vec);
@@ -69,7 +69,7 @@ namespace Maths {
         // free function versions of members
         friend float length2(Vec3 const & vec);
         friend float length(Vec3 const & vec);
-        friend void normalise(Vec3 & vec);
+        friend Vec3 normalise(Vec3 const & vec);
         friend float dot(Vec3 const & lhs, Vec3 const & rhs);
         friend Vec3 cross(Vec3 const & lhs, Vec3 const & rhs);
 
@@ -153,88 +153,66 @@ namespace Maths {
     //------------------------------------------------------------
     Vec3 
     Vec3::operator + () const {
+        std::cout << " + " << std::endl;
         return *this;
     }
 
     //------------------------------------------------------------
     Vec3 
     Vec3::operator - () const {
+        std::cout << " - " << std::endl;
         return Vec3(-m_data[0], -m_data[1], -m_data[2]);
     }
 
     /* maths operators */
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator + (Vec3 const & vec) {
-        m_data[0] += vec.m_data[0];
-        m_data[1] += vec.m_data[1];
-        m_data[2] += vec.m_data[2];
-        return *this;
+        return Vec3(m_data[0] + vec.m_data[0], m_data[1] + vec.m_data[1], m_data[2] + vec.m_data[2]);
     }
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator - (Vec3 const & vec) {
-        m_data[0] -= vec.m_data[0];
-        m_data[1] -= vec.m_data[1];
-        m_data[2] -= vec.m_data[2];
-        return *this;
+        return Vec3(m_data[0] - vec.m_data[0], m_data[1] - vec.m_data[1], m_data[2] - vec.m_data[2]);
     }
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator * (Vec3 const & vec) {
-        m_data[0] *= vec.m_data[0];
-        m_data[1] *= vec.m_data[1];
-        m_data[2] *= vec.m_data[2];
-        return *this;
+        return Vec3(m_data[0] * vec.m_data[0], m_data[1] * vec.m_data[1], m_data[2] * vec.m_data[2]);
     }
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator / (Vec3 const & vec) {
-        m_data[0] /= vec.m_data[0];
-        m_data[1] /= vec.m_data[1];
-        m_data[2] /= vec.m_data[2];
-        return *this;
+        return Vec3(m_data[0] / vec.m_data[0], m_data[1] / vec.m_data[1], m_data[2] / vec.m_data[2]);
     }
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator + (float scalar) {
-        m_data[0] += scalar;
-        m_data[1] += scalar;
-        m_data[2] += scalar;
-        return *this;
+        return Vec3(m_data[0] + scalar, m_data[1] + scalar, m_data[2] + scalar);
     }
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator - (float scalar) {
-        m_data[0] -= scalar;
-        m_data[1] -= scalar;
-        m_data[2] -= scalar;
-        return *this;
+        return Vec3(m_data[0] - scalar, m_data[1] - scalar, m_data[2] - scalar);
     }
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator * (float scalar) {
-        m_data[0] *= scalar;
-        m_data[1] *= scalar;
-        m_data[2] *= scalar;
-        return *this;
+        return Vec3(m_data[0] * scalar, m_data[1] * scalar, m_data[2] * scalar);
     }
 
 
     //------------------------------------------------------------
-    Vec3 &
+    Vec3
     Vec3::operator / (float scalar) {
-        m_data[0] /= scalar;
-        m_data[1] /= scalar;
-        m_data[2] /= scalar;
-        return *this;
+        return Vec3(m_data[0] / scalar, m_data[1] / scalar, m_data[2] / scalar);
     }
 
     /* Vec3 assignment operators */
@@ -408,16 +386,13 @@ namespace Maths {
         return vec.m_data[0] * vec.m_data[0] + vec.m_data[1] * vec.m_data[1] + vec.m_data[2] * vec.m_data[2];
     }
     
-    
     //------------------------------------------------------------
-    inline void
-    normalise(Vec3 & vec) {
+    inline Vec3
+    normalise(Vec3 const & vec) {
         float len = length(vec);
-        vec.m_data[0]   /= len;
-        vec.m_data[1]   /= len;
-        vec.m_data[2]   /= len;
+        return Vec3(vec.m_data[0] / len, vec.m_data[1] / len, vec.m_data[2] / len);
     }
-
+    
     //------------------------------------------------------------
     inline float
     dot(Vec3 const & lhs, Vec3 const & rhs) {
