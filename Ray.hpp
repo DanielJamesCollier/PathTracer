@@ -14,15 +14,27 @@
 
 class Ray {
 public:
-    Ray(Vec3 const & origin, Vec3 const & direction);
+    Ray(Maths::Vec3 const & origin, Maths::Vec3 const & direction) :
+        m_origin(origin)
+    ,   m_direction(direction)
+    {
+        //empty
+    }
     
-    Vec3 const & origin() const;
-    Vec3 const & direction() const;
-    Vec3         pointAtParam(float t) const;
+    Maths::Vec3 const & origin() const {
+        return m_origin;
+    }
+    Maths::Vec3 const & direction() const {
+        return m_direction;
+    }
+    
+    Maths::Vec3   pointAtParam(float t) const {
+        return m_origin * m_direction;
+    }
     
 private:
-    Vec3 m_origin;
-    Vec3 m_direction;
+    Maths::Vec3 m_origin;
+    Maths::Vec3 m_direction;
 };
 
 
