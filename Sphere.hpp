@@ -14,9 +14,8 @@
 class Sphere final {
     
 public:
-    Sphere(Maths::Vec3 centre, Maths::Vec3 colour, float radius) :
+    Sphere(Maths::Vec3 centre, float radius) :
         m_centre(centre)
-    ,   m_colour(colour)
     ,   m_radius(radius) {
         // empty
     }
@@ -25,17 +24,12 @@ public:
         return m_centre;
     }
     
-    Maths::Vec3 const & colour() const {
-        return m_colour;
-    }
-    
     float radius() const {
         return m_radius;
     }
     
 private:
     Maths::Vec3 m_centre;
-    Maths::Vec3 m_colour;
     float       m_radius;
 };
 #endif /* Sphere_hpp */

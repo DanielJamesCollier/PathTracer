@@ -16,8 +16,7 @@ class Ray {
 public:
     Ray(Maths::Vec3 const & origin, Maths::Vec3 const & direction) :
         m_origin(origin)
-    ,   m_direction(direction)
-    {
+    ,   m_direction(direction) {
         //empty
     }
     
@@ -28,7 +27,7 @@ public:
         return m_direction;
     }
     
-    Maths::Vec3   pointAtParam(float t) const {
+    Maths::Vec3 pointAtParam(float t) const {
         return m_origin + t * m_direction;
     }
     
