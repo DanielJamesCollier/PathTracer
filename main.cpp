@@ -10,9 +10,12 @@
 #include <fstream>
 #include <string>
 #include <cmath>
+
 #include "Vec3.hpp"
 #include "Ray.hpp"
 #include "Sphere.hpp"
+#include "Tracer.hpp"
+#include "Camera.hpp"
 
 //---------------------------------------------------------
 float raySphereIntersect(Sphere const & sphere, Ray const & ray) {
@@ -59,20 +62,20 @@ int main(int argc, const char * argv[]) {
     file.open(outputLocation);
     file << "P3\n" << width << " " << height << "\n255\n";
     
-    Maths::Vec3 bottomLeft(-2.0, -1.0, -1.0);
-    Maths::Vec3 horizontal( 4.0,  0.0,  0.0);
-    Maths::Vec3 vertical  ( 0.0,  2.0,  0.0);
-    Maths::Vec3 origin    ( 0.0,  0.0,  0.0);
+    Camera cam(Maths::Vec3(0,0,0));
     
     Sphere sphere(Maths::Vec3(0,0,-1), 0.5);
+    Sphere sphereTwo(Maths::Vec3(0,-100.5,-1), 100);
 
     for(int j {height - 1}; j >= 0; j--) {
         for(int i{0}; i < width; i++) {
-            float u = float(i) / float(width);
-            float v = float(j) / float(height);
             
-            Ray ray(origin, bottomLeft + u*horizontal + v*vertical);
+            float u = float(i  ) / float(width);
+            float v = float(j ) / float(height);
+            
+            Ray ray = cam.getRay(u, v);
             Maths::Vec3 col;
+        
             
             float t;
             if((t = raySphereIntersect(sphere, ray)) > 0.0f) {

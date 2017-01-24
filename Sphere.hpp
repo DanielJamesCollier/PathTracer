@@ -10,8 +10,10 @@
 #define Sphere_hpp
 
 #include "Vec3.hpp"
+#include "Tracer.hpp"
+#include "Ray.hpp"
 
-class Sphere final {
+class Sphere : Tracable<Sphere> {
     
 public:
     Sphere(Maths::Vec3 centre, float radius) :
@@ -26,6 +28,10 @@ public:
     
     float radius() const {
         return m_radius;
+    }
+    
+    void trace(Sphere const & traceObject, Ray const & ray) {
+        
     }
     
 private:
