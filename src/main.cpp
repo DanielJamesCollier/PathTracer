@@ -88,6 +88,8 @@ int main(int argc, const char * argv[]) {
     Camera cam(Maths::Vec3(0,0,0));
     Sphere sphere(Maths::Vec3(0,0,-1),0.5f);
 
+    TraceGroup<Sphere> spheres;
+
     for(int j {height - 1}; j >= 0; j--) {
         for(int i{0}; i < width; i++) {
             auto currentTime = Clock::now();
