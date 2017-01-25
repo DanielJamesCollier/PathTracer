@@ -55,7 +55,7 @@ Maths::Vec3 sphereColour(Ray const & r, float t) {
 int main(int argc, const char * argv[]) {
     int width  {2000};
     int height {1000};
-    std::string outputLocation{"build\\bin\\output\\render.ppm"};
+    std::string outputLocation{"render.ppm"};
 
     std::ofstream file;
     file.open(outputLocation);
