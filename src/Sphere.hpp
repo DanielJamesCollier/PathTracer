@@ -10,11 +10,9 @@
 #define Sphere_hpp
 
 #include "Vec3.hpp"
-#include "Tracer.hpp"
 #include "Ray.hpp"
 
-class Sphere : Tracable<Sphere> {
-    
+class Sphere {
 public:
     Sphere(Maths::Vec3 centre, float radius) :
         m_centre(centre)
@@ -30,8 +28,28 @@ public:
         return m_radius;
     }
     
-    void trace(Sphere const & traceObject, Ray const & ray) {
+    // returns true if hit
+    bool trace(Ray const & ray, Maths::Vec3 & colour) {
+        Maths::Vec3 oc = ray.origin() - m_centre;
         
+        float a = Maths::dot(ray.direction(), ray.direction());
+        float b = 2.0f * Maths::dot(oc, ray.direction());
+        float c = Maths::dot(oc, oc) - (m_radius * m_radius);
+        float discriminant = b * b - 4 * a * c;
+    
+        if(discriminant < 0) {
+            return false;
+        }
+
+        float t = (-b - sqrt(discriminant)) / (2.0f * a);
+
+        if(t > 0.0f) {
+            Maths::Vec3 N = Maths::normalise(ray.pointAtParam(t) - Maths::Vec3(0.0f,0.0f,-1.0f));
+            colour =  0.5f * Maths::Vec3(N.getX() + 1.0f, N.getY() + 1.0f, N.getZ() + 1.0f);
+            return true;
+        }
+
+        return false;
     }
     
 private:

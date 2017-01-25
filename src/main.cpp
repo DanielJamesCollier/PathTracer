@@ -17,38 +17,15 @@
 #include "Vec3.hpp"
 #include "Ray.hpp"
 #include "Sphere.hpp"
-#include "Tracer.hpp"
 #include "Camera.hpp"
 
 //---------------------------------------------------------
-float raySphereIntersect(Sphere const & sphere, Ray const & ray) {
-    Maths::Vec3 oc = ray.origin() - sphere.centre();
-    
-    float a = Maths::dot(ray.direction(), ray.direction());
-    float b = 2.0f * Maths::dot(oc, ray.direction());
-    float c = Maths::dot(oc, oc) - (sphere.radius() * sphere.radius());
-    float discriminant = b * b - 4 * a * c;
-   
-    if(discriminant < 0) {
-        return -1;
-    } else {
-        return (-b - sqrt(discriminant)) / (2.0f * a);
-    }
-}
-
-//---------------------------------------------------------
-Maths::Vec3 backgroundColour(Ray const & r) {
+void backgroundColour(Ray const & r, Maths::Vec3 & colour) {
     Maths::Vec3 unitDircetion = Maths::normalise(r.direction());
     
     float t = 0.5f * (unitDircetion.getY() + 1.0f);
     
-    return (1.0f - t) * Maths::Vec3(1.0f, 1.0f, 1.0f) + t * Maths::Vec3(0.5f, 0.7f, 1.0f);
-}
-
-//---------------------------------------------------------
-Maths::Vec3 sphereColour(Ray const & r, float t) {
-    Maths::Vec3 N = Maths::normalise(r.pointAtParam(t) - Maths::Vec3(0.0f,0.0f,-1.0f));
-    return 0.5f * Maths::Vec3(N.getX() + 1.0f, N.getY() + 1.0f, N.getZ() + 1.0f);
+    colour = (1.0f - t) * Maths::Vec3(1.0f, 1.0f, 1.0f) + t * Maths::Vec3(0.5f, 0.7f, 1.0f);
 }
 
 //---------------------------------------------------------
@@ -85,10 +62,8 @@ int main(int argc, const char * argv[]) {
     int currentItt          = 0;
     auto startRender        = Clock::now();
     auto startSecondCounter = Clock::now();
-    Camera cam(Maths::Vec3(0,0,0));
-    Sphere sphere(Maths::Vec3(0,0,-1),0.5f);
-
-    TraceGroup<Sphere> spheres;
+    Camera cam(Maths::Vec3(0, 0, 0));
+    Sphere sphere(Maths::Vec3(0, 0, -1), 0.5f);
 
     for(int j {height - 1}; j >= 0; j--) {
         for(int i{0}; i < width; i++) {
@@ -115,14 +90,11 @@ int main(int argc, const char * argv[]) {
             float u = (float)(i) / (float)(width);
             float v = (float)(j) / (float)(height);
             
-            Ray ray = cam.getRay(u, v);
+            Ray ray(cam.getRay(u, v));
             Maths::Vec3 col;
-        
-            float t;
-            if((t = raySphereIntersect(sphere, ray)) > 0.0f) {
-                col = sphereColour(ray, t);
-            } else {
-                col = backgroundColour(ray);
+    
+            if(!sphere.trace(ray, col)) {
+                backgroundColour(ray, col);
             }
             
             int ir {static_cast<int>(255.99 * col.getX())};
