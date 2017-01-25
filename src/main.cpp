@@ -65,6 +65,13 @@ int main(int argc, const char * argv[]) {
     Camera cam(Maths::Vec3(0, 0, 0));
     Sphere sphere(Maths::Vec3(0, 0, -1), 0.5f);
 
+    std::vector<Sphere> spheres;
+    spheres.push_back(Sphere(Maths::Vec3(0,0,-1), 0.5f));
+    spheres.push_back(Sphere(Maths::Vec3(0,0,-1), 0.4f));
+    spheres.push_back(Sphere(Maths::Vec3(0,0,-1), 0.3f));
+    spheres.push_back(Sphere(Maths::Vec3(0,0,-1), 0.2f));
+    spheres.push_back(Sphere(Maths::Vec3(0,0,-1), 0.1f));
+
     for(int j {height - 1}; j >= 0; j--) {
         for(int i{0}; i < width; i++) {
             auto currentTime = Clock::now();
@@ -92,9 +99,11 @@ int main(int argc, const char * argv[]) {
             
             Ray ray(cam.getRay(u, v));
             Maths::Vec3 col;
-    
-            if(!sphere.trace(ray, col)) {
-                backgroundColour(ray, col);
+
+            backgroundColour(ray, col); // this could be optimized to only be called if no spheres are present
+            
+            for(Sphere & s : spheres) {
+                s.trace(ray, col);
             }
             
             int ir {static_cast<int>(255.99 * col.getX())};
@@ -118,6 +127,7 @@ int main(int argc, const char * argv[]) {
     std::cout << "Max RPS [rays per second]:    " << maxRPS << std::endl;
     std::cout << "Min RPS [rays per second]:    " << minRPS << std::endl;
     std::cout << "Total Rays:                   " << width * height << std::endl;
+    std::cout << "Total Spheres:                " << spheres.size() << std::endl;
     std::cout << "----------------------------------------" << std::endl;
     return 0;
 }
