@@ -15,6 +15,7 @@ call :color 1b "-------RUN STARTED------"
 echo:
 call :color 1b "------------------------"
 main.exe
+start render.ppm
 call :color 1b "------------------------"
 echo:
 echo:

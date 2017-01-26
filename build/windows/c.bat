@@ -7,6 +7,7 @@ for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1)
 rem Prepare a file "X" with only one dot
 <nul > X set /p ".=."
 
+cls
 echo:
 echo:
 call :color 1b "------------------------"
