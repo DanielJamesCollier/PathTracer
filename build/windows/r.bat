@@ -14,8 +14,13 @@ echo:
 call :color 1b "-------RUN STARTED------"
 echo:
 call :color 1b "------------------------"
+echo:
 main.exe
 start render.ppm
+@echo on
+@echo launching default .ppm viewer to display render
+@echo off
+echo:
 call :color 1b "------------------------"
 echo:
 echo:

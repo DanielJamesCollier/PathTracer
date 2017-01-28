@@ -11,8 +11,9 @@
 
 #include "Vec3.hpp"
 #include "Ray.hpp"
+#include "Hitable.hpp"
 
-class Sphere {
+class Sphere : public Hitable {
 public:
     Sphere(Maths::Vec3 centre, float radius) :
         m_centre(centre)
@@ -27,28 +28,33 @@ public:
     float radius() const {
         return m_radius;
     }
-    
-    // returns true if hit
-    bool trace(Ray const & ray, Maths::Vec3 & colour) {
+
+    virtual bool hit(Ray const & ray, float minT, float maxT, HitRecord & record) {
         Maths::Vec3 oc = ray.origin() - m_centre;
-        
         float a = Maths::dot(ray.direction(), ray.direction());
-        float b = 2.0f * Maths::dot(oc, ray.direction());
+        float b = Maths::dot(oc, ray.direction());
         float c = Maths::dot(oc, oc) - (m_radius * m_radius);
-        float discriminant = b * b - 4 * a * c;
-    
-        if(discriminant < 0) {
-            return false;
+        float discriminant = b * b - a * c;
+        
+        if(discriminant > 0) {
+            float temp = (-b - sqrt(discriminant)) / a;
+
+            if(temp < maxT && temp > minT) {
+                record.time   = temp;
+                record.point  = ray.pointAtParam(record.time);
+                record.normal = (record.point - m_centre) / m_radius;
+                return true;
+            }
+            
+            temp = (-b + sqrt(discriminant)) / a;
+            
+            if(temp < maxT && temp > minT) {
+                record.time   = temp;
+                record.point  = ray.pointAtParam(record.time);
+                record.normal = (record.point - m_centre) / m_radius;
+                return true;
+            }
         }
-
-        float t = (-b - sqrt(discriminant)) / (2.0f * a);
-
-        if(t > 0.0f) {
-            Maths::Vec3 N = Maths::normalise(ray.pointAtParam(t) - Maths::Vec3(0.0f,0.0f,-1.0f));
-            colour =  0.5f * Maths::Vec3(N.getX() + 1.0f, N.getY() + 1.0f, N.getZ() + 1.0f);
-            return true;
-        }
-
         return false;
     }
     
