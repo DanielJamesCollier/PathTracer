@@ -70,6 +70,7 @@ namespace Maths {
         friend float length2(Vec3 const & vec);
         friend float length(Vec3 const & vec);
         friend float distance(Vec3 const & lhs, Vec3 const & rhs);
+        friend Vec3 getLongest(Vec3 const & lhs, Vec3 const & rhs);
         friend Vec3 normalise(Vec3 const & vec);
         friend float dot(Vec3 const & lhs, Vec3 const & rhs);
         friend Vec3 cross(Vec3 const & lhs, Vec3 const & rhs);
@@ -375,16 +376,26 @@ namespace Maths {
 
     /* free function versions of member functions */
 
+     //------------------------------------------------------------
+    inline float
+    length(Vec3 const & vec) {
+        return std::sqrt(vec.m_data[0] * vec.m_data[0] + vec.m_data[1] * vec.m_data[1] + vec.m_data[2] * vec.m_data[2]);
+    }
+
     //------------------------------------------------------------
     inline float
     length2(Vec3 const & vec) {
         return vec.m_data[0] * vec.m_data[0] + vec.m_data[1] * vec.m_data[1] + vec.m_data[2] * vec.m_data[2];
     }
-    
+
     //------------------------------------------------------------
-    inline float
-    length(Vec3 const & vec) {
-        return std::sqrt(vec.m_data[0] * vec.m_data[0] + vec.m_data[1] * vec.m_data[1] + vec.m_data[2] * vec.m_data[2]);
+    inline Vec3
+    getLongest(Vec3 const & lhs, Vec3 const & rhs) {
+        if(Maths::length2(lhs) > Maths::length2(rhs)) {
+            return lhs;
+        } else {
+            return rhs;
+        }
     }
 
     //------------------------------------------------------------
@@ -414,7 +425,6 @@ namespace Maths {
         float y = (lhs.m_data[2] * rhs.m_data[0]) - (lhs.m_data[0] * rhs.m_data[2]);
         float z = (lhs.m_data[0] * rhs.m_data[1]) - (lhs.m_data[1] * rhs.m_data[0]);
         return Vec3(x,y,z);
-        
     }
 } // namespace maths
 #endif // Vec3_hpp
