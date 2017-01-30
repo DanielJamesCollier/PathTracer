@@ -25,7 +25,7 @@
 float randF(float start, float end) {
     static std::random_device rand_dev;
     static std::mt19937 generator(rand_dev());
-    static std::uniform_real<float> distr(start, end);
+    static std::uniform_real_distribution<float> distr(start, end);
     return distr(generator);
 }
 
@@ -43,12 +43,11 @@ Maths::Vec3 randomInUnitSphere() {
     return p;
 }
 
-//not working
 //---------------------------------------------------------
 Maths::Vec3 colourDiffuse(Ray const r,  Hitable * world) {
     HitRecord record;
 
-    if(world->hit(r, 0.001f, FLT_MAX, record)) {
+    if(world->hit(r, 0.001f, std::numeric_limits<float>::max(), record)) {
         Maths::Vec3 target = record.point + record.normal + randomInUnitSphere();
         return 0.5f * colourDiffuse( Ray(record.point, target - record.point), world);
     } else { 
@@ -63,7 +62,7 @@ Maths::Vec3 colourDiffuse(Ray const r,  Hitable * world) {
 Maths::Vec3 colour(Ray const r,  Hitable * world) {
     HitRecord record;
 
-    if(world->hit(r, 0.0f, FLT_MAX, record)) {
+    if(world->hit(r, 0.0f, std::numeric_limits<float>::max(), record)) {
         return 0.5f * Maths::Vec3(record.normal.getX() + 1, record.normal.getY() + 1, record.normal.getZ() + 1);
     } else { 
         // background colour
@@ -75,10 +74,10 @@ Maths::Vec3 colour(Ray const r,  Hitable * world) {
 
 //---------------------------------------------------------
 int main(int argc, const char * argv[]) {
-    int width  {500};
-    int height {250};
+    int width  {2000};
+    int height {1000};
     int aaSamples{100};
-    std::string outputLocation{"render.ppm"};
+    std::string outputLocation{"./render.ppm"};
 
     std::ofstream file;
     file.open(outputLocation);
@@ -95,20 +94,14 @@ int main(int argc, const char * argv[]) {
     typedef std::chrono::system_clock Clock;
 
     // diognostics variables
-    int raysPerSecond = 0;
-    int maxRPS        = 0;
-    int minRPS        = INT_MAX;
     auto startRender  = Clock::now();
     Camera cam(Maths::Vec3(0, 0, 0));
 
     // variables needed for render
     
-    Hitable * list[4];
-   
-    list[1] = new Sphere(Maths::Vec3( 0,    0,     -1), 0.5);
-    list[2] = new Sphere(Maths::Vec3(-0.5,  0 ,    -1), 0.5);
-    list[3] = new Sphere(Maths::Vec3( 0.5,  0,     -1), 0.5);
+    Hitable * list[2];
     list[0] = new Sphere(Maths::Vec3( 0,   -100.5, -1), 100);
+    list[1] = new Sphere(Maths::Vec3( 0,    0,     -1), 0.5);
     Hitable * world = new HitList(list, 2);
 
     // string used as a buffer 
@@ -165,8 +158,6 @@ int main(int argc, const char * argv[]) {
     std::cout << "-------------" << std::endl;
     std::cout << "Trace time [in milliseconds]: " << std::chrono::duration_cast<std::chrono::milliseconds>(endRender - startRender).count() << "ms"<< std::endl;
     std::cout << "Trace time [in seconds]:      " << std::chrono::duration_cast<std::chrono::seconds>(endRender - startRender).count() << "s"<< std::endl;
-    std::cout << "Max RPS [rays per second]:    " << maxRPS << std::endl;
-    std::cout << "Min RPS [rays per second]:    " << minRPS << std::endl;
     std::cout << "Total Rays:                   " << width * height * aaSamples << std::endl;
     std::cout << "AA samples:                   " << aaSamples << std::endl;
     return 0;

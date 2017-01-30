@@ -28,7 +28,7 @@ public:
     virtual bool hit(Ray const & ray, float minT, float maxT, HitRecord & record) {
         HitRecord tempRecord;
         bool hitAnything      = false;
-        double currentClosest = DBL_MAX;
+        double currentClosest = std::numeric_limits<double>::max();;
 
         for(int i = 0; i < m_hitableCount; i++) {
             if(m_scene[i]->hit(ray, minT, maxT, tempRecord)) {

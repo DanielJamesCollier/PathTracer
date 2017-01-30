@@ -400,7 +400,7 @@ namespace Maths {
 
     //------------------------------------------------------------
     inline float
-    distance(Vec3 const & lhs, Vec3 & const rhs) {
+    distance(Vec3 const & lhs, Vec3 const & rhs) {
         Vec3 temp =  lhs - rhs;
         return temp.length();
     }
