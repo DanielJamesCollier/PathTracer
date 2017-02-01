@@ -13,71 +13,77 @@
 #include <cmath>
 #include <chrono>
 #include <vector>
-#include <random>
+#include <array>
+#include <memory>
 
 #include "Vec3.hpp"
 #include "Ray.hpp"
-#include "Sphere.hpp"
 #include "Camera.hpp"
-#include "Hitable.hpp"
+
+#include "Scene.hpp"
+
+using namespace std::string_literals;
+
+// lookup table for int to string conversion - faster than std::to_string
+//---------------------------------------------------------
+std::array<std::string, 256> lookup = {
+"0"  , "1"  , "2"  , "3"  , "4"  , "5"  , "6"  , "7"  , "8"  , "9"  , "10" , "11" , "12" , "13" , "14", 
+"15" , "16" , "17" , "18" , "19" , "20" , "21" , "22" , "23" , "24" , "25" , "26" , "27" , "28" , "29", 
+"30" , "31" , "32" , "33" , "34" , "35" , "36" , "37" , "38" , "39" , "40" , "41" , "42" , "43" , "44", 
+"45" , "46" , "47" , "48" , "49" , "50" , "51" , "52" , "53" , "54" , "55" , "56" , "57" , "58" , "59", 
+"60" , "61" , "62" , "63" , "64" , "65" , "66" , "67" , "68" , "69" , "70" , "71" , "72" , "73" , "74", 
+"75" , "76" , "77" , "78" , "79" , "80" , "81" , "82" , "83" , "84" , "85" , "86" , "87" , "88" , "89", 
+"90" , "91" , "92" , "93" , "94" , "95" , "96" , "97" , "98" , "99" , "100", "101", "102", "103", "104", 
+"105", "106", "107", "108", "109", "110", "111", "112", "113", "114", "115", "116", "117", "118", "119", 
+"120", "121", "122", "123", "124", "125", "126", "127", "128", "129", "130", "131", "132", "133", "134", 
+"135", "136", "137", "138", "139", "140", "141", "142", "143", "144", "145", "146", "147", "148", "149", 
+"150", "151", "152", "153", "154", "155", "156", "157", "158", "159", "160", "161", "162", "163", "164", 
+"165", "166", "167", "168", "169", "170", "171", "172", "173", "174", "175", "176", "177", "178", "179", 
+"180", "181", "182", "183", "184", "185", "186", "187", "188", "189", "190", "191", "192", "193", "194", 
+"195", "196", "197", "198", "199", "200", "201", "202", "203", "204", "205", "206", "207", "208", "209", 
+"210", "211", "212", "213", "214", "215", "216", "217", "218", "219", "220", "221", "222", "223", "224", 
+"225", "226", "227", "228", "229", "230", "231", "232", "233", "234", "235", "236", "237", "238", "239", 
+"240", "241", "242", "243", "244", "245", "246", "247", "248", "249", "250", "251", "252", "253", "254", 
+"255"};
 
 //---------------------------------------------------------
-float randF(float start, float end) {
-    static std::random_device rand_dev;
-    static std::mt19937 generator(rand_dev());
-    static std::uniform_real_distribution<float> distr(start, end);
-    return distr(generator);
+#include <cstdlib> // rand()
+float randF() {
+    return (double)rand() / ((double)RAND_MAX + 1);
 }
 
 //---------------------------------------------------------
 Maths::Vec3 randomInUnitSphere() {
     Maths::Vec3 p;
     do {
-        float x = randF(0.0f, 1.0f);
-        float y = randF(0.0f, 1.0f);
-        float z = randF(0.0f, 1.0f);
-        Maths::Vec3 randVec(x,y,z);
-        //std::cout << randVec << std::endl;
+        Maths::Vec3 randVec(randF(),randF(), randF());
         p = 2.0 * randVec - Maths::Vec3(1,1,1);
     } while(Maths::length2(p) >= 1.0f);
     return p;
 }
 
 //---------------------------------------------------------
-Maths::Vec3 colourDiffuse(Ray const r,  Hitable * world) {
+Maths::Vec3 colourDiffuse(Ray const r,  Scene const & world) {
     HitRecord record;
 
-    if(world->hit(r, 0.001f, std::numeric_limits<float>::max(), record)) {
+    if(world.hit(r, 0.001f, std::numeric_limits<float>::max(), record)) {
         Maths::Vec3 target = record.point + record.normal + randomInUnitSphere();
         return 0.5f * colourDiffuse( Ray(record.point, target - record.point), world);
     } else { 
         // background colour
         Maths::Vec3 unitDircetion = Maths::normalise(r.direction());
-        float t = 0.5f * (unitDircetion.getY() + 1.0f);
-        return (1.0f - t) * Maths::Vec3(1.0f, 1.0f, 1.0f) + t * Maths::Vec3(0.5f, 0.7f, 1.0f);
-    }
-}
-
-//---------------------------------------------------------
-Maths::Vec3 colour(Ray const r,  Hitable * world) {
-    HitRecord record;
-
-    if(world->hit(r, 0.0f, std::numeric_limits<float>::max(), record)) {
-        return 0.5f * Maths::Vec3(record.normal.getX() + 1, record.normal.getY() + 1, record.normal.getZ() + 1);
-    } else { 
-        // background colour
-        Maths::Vec3 unitDircetion = Maths::normalise(r.direction());
-        float t = 0.5f * (unitDircetion.getY() + 1.0f);
+        auto t = 0.5f * (unitDircetion.getY() + 1.0f);
         return (1.0f - t) * Maths::Vec3(1.0f, 1.0f, 1.0f) + t * Maths::Vec3(0.5f, 0.7f, 1.0f);
     }
 }
 
 //---------------------------------------------------------
 int main(int argc, const char * argv[]) {
-    int width  {2000};
-    int height {1000};
-    int aaSamples{100};
-    std::string outputLocation{"./render.ppm"};
+    auto width = 2000;
+    auto height = 1000;
+    auto pixelComponents = 3;
+    auto aaSamples = 100;
+    auto outputLocation = "./render.ppm"s;
 
     std::ofstream file;
     file.open(outputLocation);
@@ -90,68 +96,61 @@ int main(int argc, const char * argv[]) {
         return -1;
     }
     
-    // typedefs
-    typedef std::chrono::system_clock Clock;
+    //alias
+    using Clock = std::chrono::system_clock;
 
     // diognostics variables
-    auto startRender  = Clock::now();
+    auto startRender = Clock::now();
     Camera cam(Maths::Vec3(0, 0, 0));
 
     // variables needed for render
-    
-    Hitable * list[2];
-    list[0] = new Sphere(Maths::Vec3( 0,   -100.5, -1), 100);
-    list[1] = new Sphere(Maths::Vec3( 0,    0,     -1), 0.5);
-    Hitable * world = new HitList(list, 2);
+    Scene world;
+    world.addSphere(Maths::Vec3(0, -100.5, -1), 100);
+    world.addSphere(Maths::Vec3(0, 0, -1), 0.5);
 
     // string used as a buffer 
     std::string buffer;
-    buffer.reserve(width * height);
+    buffer.resize(width * height * pixelComponents);
 
-    int index = 0;
-    int percentComplete = 0;
-    int onePercent = height / 100;
+    // used to print diagonostics
+    auto index = 0;
+    auto percentComplete = 0;
+    auto onePercent = (width * height * aaSamples) / 100 + 1;
 
     std::cout << "\n\nTrace Started" << std::endl;
     std::cout << "-------------" << std::endl; 
-    for(int j {height - 1}; j >= 0; j--) {
-        index++;
-        if(index > onePercent) {
-            percentComplete++;
-            std::cout << "(" << percentComplete << ")%" << std::endl;
-            index = 0;
-        }
-        for(int i{0}; i < width; i++) {
+    for(auto j = height; j > 0; j--) {
+        for(auto i = 0; i < width; i++) {
             Maths::Vec3 col(0,0,0);
-            for(int anti = 0; anti < aaSamples; anti++) {
+            for(auto anti = 0; anti < aaSamples; anti++) {
                 // trace the scene
-                float u = (float)(i + ::randF(0.0f, 1.0f)) / (float)(width);
-                float v = (float)(j + ::randF(0.0f, 1.0f)) / (float)(height);
+                auto u = float{(float)(i + ::randF()) / (float)(width)};
+                auto v = float{(float)(j + ::randF()) / (float)(height)};
                 Ray ray(cam.getRay(u, v));
-                //col += ::colour(ray, world);
                 col += ::colourDiffuse(ray, world);
+
+                // calculate and print percentage complete
+                index++;
+                if(index > onePercent) {
+                    index = 0;
+                    std::cout << "(" << percentComplete << ")%" << std::endl;
+                    percentComplete++;
+                }
             }
             
             col /= float(aaSamples);
             col = Maths::Vec3(sqrtf(col.getX()), sqrtf(col.getY()), sqrtf(col.getZ()));
-            int ir {static_cast<int>(255.99 * col.getX())};
-            int ig {static_cast<int>(255.99 * col.getY())};
-            int ib {static_cast<int>(255.99 * col.getZ())};
-            
-            // append to buffer
-            buffer += std::to_string(ir);
-            buffer += " ";
-            buffer += std::to_string(ig);
-            buffer += " ";
-            buffer += std::to_string(ib);
-            buffer += "\n";
+            auto ir = static_cast<int>(255.99 * col.getX());
+            auto ig = static_cast<int>(255.99 * col.getY());
+            auto ib = static_cast<int>(255.99 * col.getZ());
+    
+            buffer += lookup[ir] + " " + lookup[ig] + " " + lookup[ib] + "\n";
         }
     }
     auto endRender = std::chrono::system_clock::now();
 
     file << "P3\n" << width << " " << height << "\n255\n";  
     file << buffer;
-    file.close();
 
     // print diognostics
     std::cout << "\n\nTrace Info" << std::endl;

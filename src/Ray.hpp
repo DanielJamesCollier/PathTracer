@@ -35,6 +35,4 @@ private:
     Maths::Vec3 m_origin;
     Maths::Vec3 m_direction;
 };
-
-
 #endif /* Ray_hpp */

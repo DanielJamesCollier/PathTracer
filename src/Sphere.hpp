@@ -31,13 +31,13 @@ public:
 
     virtual bool hit(Ray const & ray, float minT, float maxT, HitRecord & record) {
         Maths::Vec3 oc = ray.origin() - m_centre;
-        float a = Maths::dot(ray.direction(), ray.direction());
-        float b = Maths::dot(oc, ray.direction());
-        float c = Maths::dot(oc, oc) - (m_radius * m_radius);
-        float discriminant = b * b - a * c;
+        auto a = Maths::dot(ray.direction(), ray.direction());
+        auto b = Maths::dot(oc, ray.direction());
+        auto c = Maths::dot(oc, oc) - (m_radius * m_radius);
+        auto discriminant = b * b - a * c;
         
         if(discriminant > 0) {
-            float temp = (-b - sqrt(discriminant)) / a;
+            auto temp = (-b - sqrt(discriminant)) / a;
 
             if(temp < maxT && temp > minT) {
                 record.time   = temp;

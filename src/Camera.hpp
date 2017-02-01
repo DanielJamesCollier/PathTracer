@@ -26,14 +26,11 @@ public:
     Ray getRay(float u, float v) {
         return Ray(m_position, m_lowerLeftCorner + u * m_right + v * m_up);
     }
-    
-    
+
 private:
     Maths::Vec3 m_position;
     Maths::Vec3 m_lowerLeftCorner;
     Maths::Vec3 m_right;
     Maths::Vec3 m_up;
 };
-
-
 #endif /* Camera_h */

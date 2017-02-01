@@ -144,9 +144,9 @@ namespace Maths {
     //------------------------------------------------------------
     Vec3
     Vec3::cross(Vec3 const & vec) {
-        float x = (m_data[1] * vec.m_data[2]) - (m_data[2] * vec.m_data[1]);
-        float y = (m_data[2] * vec.m_data[0]) - (m_data[0] * vec.m_data[2]);
-        float z = (m_data[0] * vec.m_data[1]) - (m_data[1] * vec.m_data[0]);
+        auto x = (m_data[1] * vec.m_data[2]) - (m_data[2] * vec.m_data[1]);
+        auto y = (m_data[2] * vec.m_data[0]) - (m_data[0] * vec.m_data[2]);
+        auto z = (m_data[0] * vec.m_data[1]) - (m_data[1] * vec.m_data[0]);
         return Vec3(x,y,z);
     }
 
@@ -155,14 +155,12 @@ namespace Maths {
     //------------------------------------------------------------
     Vec3 
     Vec3::operator + () const {
-        std::cout << " + " << std::endl;
         return *this;
     }
 
     //------------------------------------------------------------
     Vec3 
     Vec3::operator - () const {
-        std::cout << " - " << std::endl;
         return Vec3(-m_data[0], -m_data[1], -m_data[2]);
     }
 
@@ -421,9 +419,9 @@ namespace Maths {
     //------------------------------------------------------------
     inline Vec3
     cross(Vec3 const & lhs, Vec3 const & rhs) {
-        float x = (lhs.m_data[1] * rhs.m_data[2]) - (lhs.m_data[2] * rhs.m_data[1]);
-        float y = (lhs.m_data[2] * rhs.m_data[0]) - (lhs.m_data[0] * rhs.m_data[2]);
-        float z = (lhs.m_data[0] * rhs.m_data[1]) - (lhs.m_data[1] * rhs.m_data[0]);
+        auto x = (lhs.m_data[1] * rhs.m_data[2]) - (lhs.m_data[2] * rhs.m_data[1]);
+        auto y = (lhs.m_data[2] * rhs.m_data[0]) - (lhs.m_data[0] * rhs.m_data[2]);
+        auto z = (lhs.m_data[0] * rhs.m_data[1]) - (lhs.m_data[1] * rhs.m_data[0]);
         return Vec3(x,y,z);
     }
 } // namespace maths
