@@ -20,6 +20,10 @@ public:
     ,   m_radius(radius) {
         // empty
     }
+
+    virtual ~Sphere() {
+        // empty - virtual because Hitable is an abstract class
+    }
     
     Maths::Vec3 const & centre() const {
         return m_centre;
