@@ -11,14 +11,14 @@ namespace Maths {
         // member functions
         //---------------------------------------------------------
         //RAII
-        Vec3(float x = 0.0f, float y = 0.0f, float z = 0.0f);
+        explicit Vec3(float x = 0.0f, float y = 0.0f, float z = 0.0f);
 
         // getters
         float getX() const;
         float getY() const;
         float getZ() const;
 
-        // vector opperations
+        // vector exlusive operations
         float length() const;
         float length2() const;
         void normalise();
@@ -29,7 +29,7 @@ namespace Maths {
         Vec3 operator + () const;
         Vec3 operator - () const;
         
-        // maths operators -  (non cost this, const vec || float scalar)
+        // maths operators -  ((non const this, const vec) || (non const this, float scalar)
         Vec3 operator + (Vec3 const & vec);
         Vec3 operator - (Vec3 const & vec);
         Vec3 operator * (Vec3 const & vec);

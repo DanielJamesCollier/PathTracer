@@ -7,13 +7,15 @@
 
 #include "Sphere.hpp"
 #include "Hitable.hpp"
+#include "HitRecord.hpp"
+#include "Material.hpp"
 
-class Scene {
+class Scene final {
 public:
     Scene() = default;
 
-    void addSphere(Maths::Vec3 const & location, float radius) {
-        m_scene.push_back(std::make_unique<Sphere>(location, radius));
+    void addSphere(Maths::Vec3 const & location, float radius, Material * material) {
+        m_scene.push_back(std::make_unique<Sphere>(location, radius, material));
     }
 
     bool hit(Ray const & ray, float minT, float maxT, HitRecord & record) const {

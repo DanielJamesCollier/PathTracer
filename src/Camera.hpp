@@ -12,9 +12,9 @@
 #include "Vec3.hpp"
 #include "Ray.hpp"
 
-class Camera {
+class Camera final {
 public:
-    Camera(Maths::Vec3 const & position) :
+    explicit Camera(Maths::Vec3 const & position) :
         m_position(position)
     ,   m_lowerLeftCorner(Maths::Vec3(-2.0f, -1.0f, -1.0f))
     ,   m_right(Maths::Vec3(4.0f, 0.0f, 0.0f))

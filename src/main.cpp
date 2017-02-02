@@ -15,60 +15,31 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <cassert>
 
 #include "Vec3.hpp"
 #include "Ray.hpp"
 #include "Camera.hpp"
-
+#include "Utils.hpp"
 #include "Scene.hpp"
 
 using namespace std::string_literals;
 
-// lookup table for int to string conversion - faster than std::to_string
 //---------------------------------------------------------
-std::array<std::string, 256> lookup = {
-"0"  , "1"  , "2"  , "3"  , "4"  , "5"  , "6"  , "7"  , "8"  , "9"  , "10" , "11" , "12" , "13" , "14", 
-"15" , "16" , "17" , "18" , "19" , "20" , "21" , "22" , "23" , "24" , "25" , "26" , "27" , "28" , "29", 
-"30" , "31" , "32" , "33" , "34" , "35" , "36" , "37" , "38" , "39" , "40" , "41" , "42" , "43" , "44", 
-"45" , "46" , "47" , "48" , "49" , "50" , "51" , "52" , "53" , "54" , "55" , "56" , "57" , "58" , "59", 
-"60" , "61" , "62" , "63" , "64" , "65" , "66" , "67" , "68" , "69" , "70" , "71" , "72" , "73" , "74", 
-"75" , "76" , "77" , "78" , "79" , "80" , "81" , "82" , "83" , "84" , "85" , "86" , "87" , "88" , "89", 
-"90" , "91" , "92" , "93" , "94" , "95" , "96" , "97" , "98" , "99" , "100", "101", "102", "103", "104", 
-"105", "106", "107", "108", "109", "110", "111", "112", "113", "114", "115", "116", "117", "118", "119", 
-"120", "121", "122", "123", "124", "125", "126", "127", "128", "129", "130", "131", "132", "133", "134", 
-"135", "136", "137", "138", "139", "140", "141", "142", "143", "144", "145", "146", "147", "148", "149", 
-"150", "151", "152", "153", "154", "155", "156", "157", "158", "159", "160", "161", "162", "163", "164", 
-"165", "166", "167", "168", "169", "170", "171", "172", "173", "174", "175", "176", "177", "178", "179", 
-"180", "181", "182", "183", "184", "185", "186", "187", "188", "189", "190", "191", "192", "193", "194", 
-"195", "196", "197", "198", "199", "200", "201", "202", "203", "204", "205", "206", "207", "208", "209", 
-"210", "211", "212", "213", "214", "215", "216", "217", "218", "219", "220", "221", "222", "223", "224", 
-"225", "226", "227", "228", "229", "230", "231", "232", "233", "234", "235", "236", "237", "238", "239", 
-"240", "241", "242", "243", "244", "245", "246", "247", "248", "249", "250", "251", "252", "253", "254", 
-"255"};
-
-//---------------------------------------------------------
-#include <cstdlib> // rand()
-float randF() {
-    return (double)rand() / ((double)RAND_MAX + 1);
-}
-
-//---------------------------------------------------------
-Maths::Vec3 randomInUnitSphere() {
-    Maths::Vec3 p;
-    do {
-        Maths::Vec3 randVec(randF(),randF(), randF());
-        p = 2.0 * randVec - Maths::Vec3(1,1,1);
-    } while(Maths::length2(p) >= 1.0f);
-    return p;
-}
-
-//---------------------------------------------------------
-Maths::Vec3 colourDiffuse(Ray const r,  Scene const & world) {
+//#include "Material.hpp"
+Maths::Vec3 colour(Ray const r,  Scene const & world, int depth) {
     HitRecord record;
 
     if(world.hit(r, 0.001f, std::numeric_limits<float>::max(), record)) {
-        Maths::Vec3 target = record.point + record.normal + randomInUnitSphere();
-        return 0.5f * colourDiffuse( Ray(record.point, target - record.point), world);
+        assert(record.ptr_mat != nullptr);
+        Ray scattered;
+        Maths::Vec3 attenuation;
+
+        if(depth < 50 && record.ptr_mat->scatter(r, record, /*out var*/ attenuation, /*out var*/ scattered)) {
+            return attenuation * colour(scattered, world, depth + 1);
+        } else {
+            return Maths::Vec3(0, 0, 0);
+        }
     } else { 
         // background colour
         Maths::Vec3 unitDircetion = Maths::normalise(r.direction());
@@ -105,8 +76,11 @@ int main(int argc, const char * argv[]) {
 
     // variables needed for render
     Scene world;
-    world.addSphere(Maths::Vec3(0, -100.5, -1), 100);
-    world.addSphere(Maths::Vec3(0, 0, -1), 0.5);
+    world.addSphere(Maths::Vec3(0, -100.5, -1), 100, new Lambertian(Maths::Vec3(0.8,0.8,0.0))); // floor
+
+    world.addSphere(Maths::Vec3(1, 0, -1), 0.5, new Metal(Maths::Vec3(0.8 ,0.8, 0.8), 0.3f));           // right
+    world.addSphere(Maths::Vec3(-1, 0, -1), 0.5, new Metal(Maths::Vec3(0.8 ,0.8, 0.8), 1.0f));          // left
+    world.addSphere(Maths::Vec3(0, 0, -1), 0.5, new Lambertian(Maths::Vec3(0.8,0.3,0.3)));      // middle
 
     // string used as a buffer 
     std::string buffer;
@@ -124,10 +98,10 @@ int main(int argc, const char * argv[]) {
             Maths::Vec3 col(0,0,0);
             for(auto anti = 0; anti < aaSamples; anti++) {
                 // trace the scene
-                auto u = float{(float)(i + ::randF()) / (float)(width)};
-                auto v = float{(float)(j + ::randF()) / (float)(height)};
+                auto u = float{(float)(i + Utils::randF()) / (float)(width)};
+                auto v = float{(float)(j + Utils::randF()) / (float)(height)};
                 Ray ray(cam.getRay(u, v));
-                col += ::colourDiffuse(ray, world);
+                col += ::colour(ray, world, 0);
 
                 // calculate and print percentage complete
                 index++;
@@ -144,7 +118,7 @@ int main(int argc, const char * argv[]) {
             auto ig = static_cast<int>(255.99 * col.getY());
             auto ib = static_cast<int>(255.99 * col.getZ());
     
-            buffer += lookup[ir] + " " + lookup[ig] + " " + lookup[ib] + "\n";
+            buffer += std::to_string(ir) + " " + std::to_string(ig) + " " + std::to_string(ib) + "\n";
         }
     }
     auto endRender = std::chrono::system_clock::now();

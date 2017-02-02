@@ -12,8 +12,12 @@
 #include <stdio.h>
 #include "Vec3.hpp"
 
-class Ray {
+class Ray final {
 public:
+    Ray() {
+        // empty
+    }
+    
     Ray(Maths::Vec3 const & origin, Maths::Vec3 const & direction) :
         m_origin(origin)
     ,   m_direction(direction) {
@@ -30,7 +34,7 @@ public:
     Maths::Vec3 pointAtParam(float t) const {
         return m_origin + t * m_direction;
     }
-    
+
 private:
     Maths::Vec3 m_origin;
     Maths::Vec3 m_direction;

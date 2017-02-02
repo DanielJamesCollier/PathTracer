@@ -3,12 +3,7 @@
 
 #include "Vec3.hpp"
 #include "Ray.hpp"
-
-struct HitRecord {
-    float time;
-    Maths::Vec3 point;
-    Maths::Vec3 normal;
-};
+#include "HitRecord.hpp"
 
 class Hitable {
 public:
