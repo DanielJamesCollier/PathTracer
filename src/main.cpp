@@ -88,7 +88,7 @@ bool writeToFile(std::string fileLocation,int samples, MultiArray<Maths::Vec3, w
 }
 
 //---------------------------------------------------------
-int main(int argc, const char * argv[]) {
+int main(int argc, char* argv[])  {
     // multithreading stuff
     auto numCores =  std::thread::hardware_concurrency();
 
@@ -103,6 +103,8 @@ int main(int argc, const char * argv[]) {
     //...
 
     // image specification
+    const int x = 100;
+    const int y = 100;
     const int width = 1000;
     const int height = 400;
     const int maxSamples = 2000;
@@ -134,7 +136,7 @@ int main(int argc, const char * argv[]) {
     //...
 
     // render critial variables
-    Window window("PathTracer", 0, 0, width, height);
+    Window window("PathTracer", x, y, width, height);
     Camera cam(Maths::Vec3(0,0,4), 70, (float) width / (float)height);
     MultiArray<Maths::Vec3, width, height> pixels;
     bool running = true;

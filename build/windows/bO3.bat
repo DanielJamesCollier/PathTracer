@@ -15,8 +15,8 @@ call :color 1b "------Build Started-----"
 echo:
 call :color 1b "------------------------"
 echo:
-echo cl /EHsc /MD  ../../src/main.cpp /I deps/SDL2/include /link /LIBPATH:deps/SDL2/libs SDL2.lib SDL2main.lib /SUBSYSTEM:CONSOLE
-cl /EHsc /MD  ../../src/main.cpp /I deps/SDL2/include /link /LIBPATH:deps/SDL2/libs SDL2.lib SDL2main.lib /SUBSYSTEM:CONSOLE
+echo cl /O2 /Ot  ../../src/main.cpp /I ../../src/main.cpp /I deps/SDL2/include /link /LIBPATH:deps/SDL2/libs SDL2.lib SDL2main.lib /SUBSYSTEM:CONSOLE
+cl /O2 /Ot  ../../src/main.cpp /I ../../src/main.cpp /I deps/SDL2/include /link /LIBPATH:deps/SDL2/libs SDL2.lib SDL2main.lib /SUBSYSTEM:CONSOLE
 call :color 1b "------------------------"
 echo:
 echo:

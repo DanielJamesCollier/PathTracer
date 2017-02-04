@@ -19,8 +19,6 @@ main.exe
 start render.ppm
 echo:
 echo:
-call :color 1c "launching default .ppm viewer to display render"
-echo:
 call :color 1b "------------------------"
 echo:
 echo:

@@ -3,9 +3,5 @@
 ## Scripts
 ### c.bat   = Clean
 ### b.bat   = Build
+### bO3.bat = Build optimized code
 ### r.bat   = Run
-
-## Multi Scripts
-### cb.bat  = Clean & Build
-### br.bat  = Build & Run
-### cbr.bat = Clean & Build & Run

@@ -5,8 +5,13 @@
 #include <fstream>
 #include <string>
 
-// dependancies
-#include <SDL2/SDL.h> // TODO: SDL2 is is ./framework on my comp need to compensate for this when other people don't have this
+#if defined(_WIN32)
+#   include "../build/Windows/deps/SDL2/include/SDL.h"
+#elif defined(__APPLE__)
+#   include <SDL2/SDL.h> // TODO: SDL2 is is ./framework on my comp need to compensate for this when other people don't have this
+#else
+#   error "system not supported"
+#endif
 
 class Window final {
 public:
