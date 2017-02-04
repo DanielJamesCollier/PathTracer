@@ -16,17 +16,21 @@
 #include <array>
 #include <memory>
 #include <cassert>
+#include <thread>
 
 #include "Vec3.hpp"
 #include "Ray.hpp"
 #include "Camera.hpp"
 #include "Utils.hpp"
 #include "Scene.hpp"
+#include "Window.hpp"
+#include "MultiArray.hpp"
 
 using namespace std::string_literals;
 
+#define RAY_DEPTH 100
+
 //---------------------------------------------------------
-//#include "Material.hpp"
 Maths::Vec3 colour(Ray const r,  Scene const & world, int depth) {
     HitRecord record;
 
@@ -35,7 +39,7 @@ Maths::Vec3 colour(Ray const r,  Scene const & world, int depth) {
         Ray scattered;
         Maths::Vec3 attenuation;
 
-        if(depth < 50 && record.ptr_mat->scatter(r, record, /*out var*/ attenuation, /*out var*/ scattered)) {
+        if(depth < RAY_DEPTH && record.ptr_mat->scatter(r, record, /*out var*/ attenuation, /*out var*/ scattered)) {
             return attenuation * colour(scattered, world, depth + 1);
         } else {
             return Maths::Vec3(0, 0, 0);
@@ -49,59 +53,118 @@ Maths::Vec3 colour(Ray const r,  Scene const & world, int depth) {
 }
 
 //---------------------------------------------------------
-int main(int argc, const char * argv[]) {
-    auto width = 2000;
-    auto height = 1000;
-    auto pixelComponents = 3;
-    auto aaSamples = 100;
-    auto outputLocation = "./render.ppm"s;
-
+template<int width, int height>
+bool writeToFile(std::string fileLocation,int samples, MultiArray<Maths::Vec3, width, height> & pixels) {
     std::ofstream file;
-    file.open(outputLocation);
+    file.open(fileLocation);
 
+    // early return
     if(!file.is_open()) {
         std::cout << "\n\nFile failed to open" << std::endl;
         std::cout << "--------------------------------------" << std::endl;
-        std::cerr << "file: " << outputLocation << std::endl;
+        std::cerr << "file: " << fileLocation << std::endl;
         std::cout << "\n\n" << std::endl;
-        return -1;
+        return false;
     }
-    
-    //alias
-    using Clock = std::chrono::system_clock;
 
-    // diognostics variables
-    auto startRender = Clock::now();
-    Camera cam(Maths::Vec3(0, 0, 0));
+    // intialise the string buffer with the .ppm header
+    std::string buffer = "P3\n" + std::to_string(width) + " " + std::to_string(height) + "\n255\n";
 
-    // variables needed for render
+    // convert pixel array into string array
+    for(auto j = height; j > 0; j--) {
+            for(auto i = 0; i < width; i++) {
+                pixels(i,j) /= static_cast<float>(samples);
+                pixels(i, j) = Maths::Vec3(sqrtf(pixels(i, j).getX()), sqrtf(pixels(i, j).getY()), sqrtf(pixels(i, j).getZ()));
+                int ir = static_cast<int>(255.99 * pixels(i, j).getX());
+                int ig = static_cast<int>(255.99 * pixels(i, j).getY());
+                int ib = static_cast<int>(255.99 * pixels(i, j).getZ());
+        
+                std::string rgb_string = std::to_string(ir) + " " + std::to_string(ig) + " " + std::to_string(ib) + "\n";
+                buffer += rgb_string;
+        }
+    }
+    file << buffer;
+    return true;
+}
+
+//---------------------------------------------------------
+int main(int argc, const char * argv[]) {
+    // multithreading stuff
+    auto numCores =  std::thread::hardware_concurrency();
+
+    // some times we cant detect the number of cores on a machine,
+    // if we cant just run single threaded
+    if(numCores == 1) {
+        numCores = 2;
+    }
+
+    std::cout << "Cores Available: " << numCores << std::endl;
+    std::cout << "Spooling Cores..." << std::endl;
+    //...
+
+    // image specification
+    const int width = 1000;
+    const int height = 400;
+    const int maxSamples = 2000;
+    const auto outputLocation = "./render.ppm"s;
+    //...
+
+    // materials
+    auto lambertFloor = std::make_unique<Lambertian>(Maths::Vec3(0.8f, 0.8f, 0.0f));
+    auto lambertMiddle = std::make_unique<Lambertian>(Maths::Vec3(0.8f, 0.3f, 0.3f));
+    auto leftMetal = std::make_unique<Metal>(Maths::Vec3(0.8f, 0.8f, 0.8f), 1.0f);
+    auto rightMetal = std::make_unique<Metal>(Maths::Vec3(0.8f, 0.6f, 0.2f), 0.1f);
+    auto glass = std::make_unique<Dialectric>(1.5f);
+    //...
+
+    // add spheres to world
     Scene world;
-    world.addSphere(Maths::Vec3(0, -100.5, -1), 100, new Lambertian(Maths::Vec3(0.8,0.8,0.0))); // floor
-
-    world.addSphere(Maths::Vec3(1, 0, -1), 0.5, new Metal(Maths::Vec3(0.8 ,0.8, 0.8), 0.3f));           // right
-    world.addSphere(Maths::Vec3(-1, 0, -1), 0.5, new Metal(Maths::Vec3(0.8 ,0.8, 0.8), 1.0f));          // left
-    world.addSphere(Maths::Vec3(0, 0, -1), 0.5, new Lambertian(Maths::Vec3(0.8,0.3,0.3)));      // middle
-
-    // string used as a buffer 
-    std::string buffer;
-    buffer.resize(width * height * pixelComponents);
-
+    world.addSphere(Maths::Vec3(0, -100.5, -1), 100, &*lambertFloor);
+    world.addSphere(Maths::Vec3(1, 2.5, -8), 3, &*rightMetal); 
+    world.addSphere(Maths::Vec3(2, 0, -1), 0.5, &*rightMetal);
+    world.addSphere(Maths::Vec3(1, 0, -1), 0.5, &*leftMetal);
+    world.addSphere(Maths::Vec3(-1, 0, -1), 0.5,&*glass);  
+    world.addSphere(Maths::Vec3(0, 0, -1), 0.5, &*lambertMiddle); 
+    //...
+   
     // used to print diagonostics
     auto index = 0;
     auto percentComplete = 0;
-    auto onePercent = (width * height * aaSamples) / 100 + 1;
+    auto onePercent = (width * height * maxSamples) / 100;
+    //...
+
+    // render critial variables
+    Window window("PathTracer", 0, 0, width, height);
+    Camera cam(Maths::Vec3(0,0,4), 70, (float) width / (float)height);
+    MultiArray<Maths::Vec3, width, height> pixels;
+    bool running = true;
+    auto currentSamples = 0;
+    using Clock = std::chrono::system_clock;
+    //..
 
     std::cout << "\n\nTrace Started" << std::endl;
     std::cout << "-------------" << std::endl; 
-    for(auto j = height; j > 0; j--) {
-        for(auto i = 0; i < width; i++) {
-            Maths::Vec3 col(0,0,0);
-            for(auto anti = 0; anti < aaSamples; anti++) {
-                // trace the scene
-                auto u = float{(float)(i + Utils::randF()) / (float)(width)};
-                auto v = float{(float)(j + Utils::randF()) / (float)(height)};
+    
+    int forward = 0; // used to flip the image for sdl drawing
+    auto startRender = Clock::now();
+
+    for(auto s = 0; s < maxSamples; s++) {
+        for(auto j = height, forward = 0; j > 0; j--, forward++) { 
+            for(auto i = 0; i < width; i++) {
+                auto u = (float)(i + Utils::randF()) / (float)(width);
+                auto v = (float)(j + Utils::randF()) / (float)(height);
                 Ray ray(cam.getRay(u, v));
-                col += ::colour(ray, world, 0);
+                pixels(i,j) += ::colour(ray, world, 0);
+
+                // draw current pixel to screen
+                Maths::Vec3  temp = pixels(i,j);
+                temp /= s + 1;
+                temp = Maths::Vec3(sqrtf(temp.getX()), sqrtf(temp.getY()), sqrtf(temp.getZ()));
+                int ir = static_cast<int>(255.99 * temp.getX());
+                int ig = static_cast<int>(255.99 * temp.getY());
+                int ib = static_cast<int>(255.99 * temp.getZ());
+                window.output(ir, ig, ib, i, forward);
+                //...
 
                 // calculate and print percentage complete
                 index++;
@@ -110,28 +173,37 @@ int main(int argc, const char * argv[]) {
                     std::cout << "(" << percentComplete << ")%" << std::endl;
                     percentComplete++;
                 }
+                //...
             }
-            
-            col /= float(aaSamples);
-            col = Maths::Vec3(sqrtf(col.getX()), sqrtf(col.getY()), sqrtf(col.getZ()));
-            auto ir = static_cast<int>(255.99 * col.getX());
-            auto ig = static_cast<int>(255.99 * col.getY());
-            auto ib = static_cast<int>(255.99 * col.getZ());
-    
-            buffer += std::to_string(ir) + " " + std::to_string(ig) + " " + std::to_string(ib) + "\n";
         }
+        window.swapBackBuffer();
+
+        // check if the window has been closed
+        window.eventLoop(running);
+        if(!running) {
+            currentSamples = s + 1;
+            break;
+        }
+        //...
     }
     auto endRender = std::chrono::system_clock::now();
 
-    file << "P3\n" << width << " " << height << "\n255\n";  
-    file << buffer;
+    // output file 
+    if(running) {
+        if(!::writeToFile(outputLocation, maxSamples, pixels)) return -1;
+    } else {
+        if(!::writeToFile(outputLocation, currentSamples, pixels)) return -1;
+    }
+    //...
 
     // print diognostics
     std::cout << "\n\nTrace Info" << std::endl;
     std::cout << "-------------" << std::endl;
     std::cout << "Trace time [in milliseconds]: " << std::chrono::duration_cast<std::chrono::milliseconds>(endRender - startRender).count() << "ms"<< std::endl;
     std::cout << "Trace time [in seconds]:      " << std::chrono::duration_cast<std::chrono::seconds>(endRender - startRender).count() << "s"<< std::endl;
-    std::cout << "Total Rays:                   " << width * height * aaSamples << std::endl;
-    std::cout << "AA samples:                   " << aaSamples << std::endl;
+    std::cout << "Total Rays:                   " << width * height * currentSamples << std::endl;
+    std::cout << "Samples:                      " << currentSamples << std::endl;
+    std::cout << "Samples Per Second            " << static_cast<float>(currentSamples) / static_cast<float>(std::chrono::duration_cast<std::chrono::seconds>(endRender - startRender).count()) << std::endl;
+    //...
     return 0;
 }

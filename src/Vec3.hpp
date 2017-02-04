@@ -18,6 +18,11 @@ namespace Maths {
         float getY() const;
         float getZ() const;
 
+        // setters
+        void setX(float x);
+        void setY(float y);
+        void setZ(float z);
+
         // vector exlusive operations
         float length() const;
         float length2() const;
@@ -61,6 +66,14 @@ namespace Maths {
         friend Vec3 operator - (float lhs, Vec3 const & rhs);
         friend Vec3 operator * (float lhs, Vec3 const & rhs);
         friend Vec3 operator / (float lhs, Vec3 const & rhs);
+
+        // TODO DODODODODOODODODOODOOD THISSSSSSSSS
+        friend Vec3 operator + (Vec3 const & lhs, float rhs);
+        friend Vec3 operator - (Vec3 const & lhs, float rhs);
+        friend Vec3 operator * (Vec3 const & lhs, float rhs);
+        friend Vec3 operator / (Vec3 const & lhs, float rhs);
+        //...
+
         friend Vec3 operator + (Vec3 const & lhs, Vec3 const & rhs);
         friend Vec3 operator - (Vec3 const & lhs, Vec3 const & rhs);
         friend Vec3 operator * (Vec3 const & lhs, Vec3 const & rhs);
@@ -83,7 +96,6 @@ namespace Maths {
     };
 
     /* RAII */
-
     //------------------------------------------------------------
     Vec3::Vec3(float x, float y, float z)
     :
@@ -93,7 +105,6 @@ namespace Maths {
     }
 
     /* getters */
-
     //------------------------------------------------------------
     float
     Vec3::getX() const {
@@ -112,8 +123,26 @@ namespace Maths {
         return m_data[2];
     }
 
-    /* vector operations */
+     /* setters */
+    //------------------------------------------------------------
+    void
+    Vec3::setX(float x) {
+        m_data[0] = x;
+    }
 
+    //------------------------------------------------------------
+    void
+    Vec3::setY(float y) {
+        m_data[1] = y;
+    }
+
+    //------------------------------------------------------------
+    void
+    Vec3::setZ(float z) {
+        m_data[2] = z;
+    }
+
+    /* vector operations */
     //------------------------------------------------------------
     float 
     Vec3::length() const {
@@ -151,7 +180,6 @@ namespace Maths {
     }
 
     /* unary operators */
-
     //------------------------------------------------------------
     Vec3 
     Vec3::operator + () const {
@@ -165,7 +193,6 @@ namespace Maths {
     }
 
     /* maths operators */
-
     //------------------------------------------------------------
     Vec3
     Vec3::operator + (Vec3 const & vec) {
@@ -216,7 +243,6 @@ namespace Maths {
     }
 
     /* Vec3 assignment operators */
-
     //------------------------------------------------------------
     Vec3 & 
     Vec3::operator += (Vec3 const & vec) {
@@ -254,7 +280,6 @@ namespace Maths {
     }
 
     /* scalar assignment opperators */
-
     //------------------------------------------------------------
     Vec3 & 
     Vec3::operator += (float scalar) {
@@ -292,7 +317,6 @@ namespace Maths {
     }
 
     /* free function operators - (scalar [operator] Vec3) */
-
     //------------------------------------------------------------
     inline Vec3
     operator += (float lhs, Vec3 const & rhs) {
@@ -343,6 +367,30 @@ namespace Maths {
 
     //------------------------------------------------------------
     inline Vec3
+    operator + (Vec3 const & lhs, float rhs) {
+        return Vec3(lhs.m_data[0] + rhs, lhs.m_data[1] + rhs, lhs.m_data[2] + rhs);
+    }
+
+    //------------------------------------------------------------
+    inline Vec3
+    operator - (Vec3 const & lhs, float rhs) {
+        return Vec3(lhs.m_data[0] - rhs, lhs.m_data[1] - rhs, lhs.m_data[2] - rhs);
+    }
+
+    //------------------------------------------------------------
+    inline Vec3
+    operator * (Vec3 const & lhs, float rhs){
+        return Vec3(lhs.m_data[0] * rhs, lhs.m_data[1] * rhs, lhs.m_data[2] * rhs);
+    }
+    
+    //------------------------------------------------------------
+    inline Vec3
+    operator / (Vec3 const & lhs, float rhs) {
+        return Vec3(lhs.m_data[0] / rhs, lhs.m_data[1] / rhs, lhs.m_data[2] / rhs);
+    }
+
+    //------------------------------------------------------------
+    inline Vec3
     operator + (Vec3 const & lhs, Vec3 const & rhs) {
         return Vec3(lhs.m_data[0] + rhs.m_data[0], lhs.m_data[1] + rhs.m_data[1], lhs.m_data[2] + rhs.m_data[2]);
     }
@@ -373,7 +421,6 @@ namespace Maths {
     }
 
     /* free function versions of member functions */
-
      //------------------------------------------------------------
     inline float
     length(Vec3 const & vec) {
