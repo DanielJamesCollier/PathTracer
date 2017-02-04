@@ -106,8 +106,8 @@ int main(int argc, char* argv[])  {
     const int x = 100;
     const int y = 100;
     const int width = 1000;
-    const int height = 400;
-    const int maxSamples = 2000;
+    const int height = 500;
+    const int maxSamples = 1000;
     const auto outputLocation = "./render.ppm"s;
     //...
 

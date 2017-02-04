@@ -8,7 +8,7 @@
 #if defined(_WIN32)
 #   include "../build/Windows/deps/SDL2/include/SDL.h"
 #elif defined(__APPLE__)
-#   include <SDL2/SDL.h> // TODO: SDL2 is is ./framework on my comp need to compensate for this when other people don't have this
+#   include "../build/Mac/deps/SDL2.framework/Versions/A/Headers/SDL.h"
 #else
 #   error "system not supported"
 #endif
