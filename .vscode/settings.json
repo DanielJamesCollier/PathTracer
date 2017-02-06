@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "thread": "cpp"
+        "thread": "cpp",
+        "xiosbase": "cpp",
+        "memory": "cpp",
+        "tuple": "cpp",
+        "functional": "cpp",
+        "xutility": "cpp"
     }
 }

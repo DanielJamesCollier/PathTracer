@@ -28,7 +28,7 @@
 
 using namespace std::string_literals;
 
-#define RAY_DEPTH 100
+#define RAY_DEPTH 50
 
 //---------------------------------------------------------
 Maths::Vec3 colour(Ray const r,  Scene const & world, int depth) {
@@ -73,7 +73,7 @@ bool writeToFile(std::string fileLocation,int samples, MultiArray<Maths::Vec3, w
     // convert pixel array into string array
     for(auto j = height; j > 0; j--) {
             for(auto i = 0; i < width; i++) {
-                pixels(i,j) /= static_cast<float>(samples);
+                pixels(i, j) /= static_cast<float>(samples);
                 pixels(i, j) = Maths::Vec3(sqrtf(pixels(i, j).getX()), sqrtf(pixels(i, j).getY()), sqrtf(pixels(i, j).getZ()));
                 int ir = static_cast<int>(255.99 * pixels(i, j).getX());
                 int ig = static_cast<int>(255.99 * pixels(i, j).getY());
@@ -87,28 +87,98 @@ bool writeToFile(std::string fileLocation,int samples, MultiArray<Maths::Vec3, w
     return true;
 }
 
-//---------------------------------------------------------
-int main(int argc, char* argv[])  {
-    // multithreading stuff
-    auto numCores =  std::thread::hardware_concurrency();
+template<int ScreenWidth, int ScreenHeight, int TraceJobID>
+struct TraceJob {
+    TraceJob(int xBegin, int yBegin, int xEnd, int yEnd, int samples, Camera const & camera, Scene const & scene, MultiArray<Maths::Vec3, ScreenWidth, ScreenHeight> & pixels) :
+        m_xBegin(xBegin)
+    ,   m_yBegin(yBegin)
+    ,   m_xEnd(xEnd)
+    ,   m_yEnd(yEnd)
+    ,   m_samples(samples)
+    ,   m_camera(camera)
+    ,   m_scene(scene)
+    ,   m_pixels(pixels)
+    {
+        // empty
+    }
+    
+    void operator() () {
+        std::cout << "TraceJob[" << std::to_string(TraceJobID) << "] START" << std::endl;
 
-    // some times we cant detect the number of cores on a machine,
-    // if we cant just run single threaded
-    if(numCores == 1) {
-        numCores = 2;
+        auto numIter = 0;
+        for(auto s = 0; s < m_samples; s++) {
+            for(auto j = m_yEnd; j > m_yBegin; j--) { 
+                for(auto i = m_xBegin; i < m_xEnd; i++) {
+                    auto u = (float)(i + Utils::randF()) / (float)(ScreenWidth);
+                    auto v = (float)(j + Utils::randF()) / (float)(ScreenHeight);
+                    Ray ray(m_camera.getRay(u, v));
+                    m_pixels(i,j) += ::colour(ray, m_scene, 0);     
+                    numIter++;
+                }
+            }
+             std::cout << "trace Job" << std::endl;
+        }
+      std::cout << "TraceJob[" << std::to_string(TraceJobID) << "] END" << std::endl;
     }
 
-    std::cout << "Cores Available: " << numCores << std::endl;
-    std::cout << "Spooling Cores..." << std::endl;
-    //...
+private:
+    int m_xBegin;
+    int m_yBegin;
+    int m_xEnd;
+    int m_yEnd;
+    int m_samples;
+    Camera m_camera;
+    Scene const & m_scene;
+    MultiArray<Maths::Vec3, ScreenWidth, ScreenHeight> & m_pixels;
+};
 
+template<int ScreenWidth, int ScreenHeight>
+struct RenderJob {
+public:
+RenderJob(Window const & window, MultiArray<Maths::Vec3, ScreenWidth, ScreenHeight> & pixels, int numSamples) : 
+    m_window(window)
+,   m_pixels(pixels)
+,   m_numSamples(numSamples)
+,   m_running(true)
+{
+    // empty
+}
+
+void kill() {
+    m_running = false;
+}
+
+void operator () () {
+    // render 
+    std::cout << "Thread: Render Job started" << std::endl;
+    while(m_running) {
+        m_window.draw(m_pixels, m_numSamples);
+        m_window.eventLoop(m_running);
+        std::cout << "render Job" << std::endl;
+    }
+    std::cout << "Thread: Render Job ended" << std::endl;
+}
+
+private:    
+    Window m_window;
+    MultiArray<Maths::Vec3, ScreenWidth, ScreenHeight> & m_pixels;
+    int m_numSamples;
+    bool m_running;
+};
+
+//---------------------------------------------------------
+int main(int argc, char* argv[])  {
     // image specification
     const int x = 100;
     const int y = 100;
     const int width = 1000;
     const int height = 500;
-    const int maxSamples = 1000;
+    const int maxSamples = 100;
     const auto outputLocation = "./render.ppm"s;
+    Window window("PathTracer", x, y, width, height);
+    MultiArray<Maths::Vec3, width, height> pixels;
+    Camera cam(Maths::Vec3(0,0,4), 70, (float) width / (float)height);
+    using Clock = std::chrono::system_clock;
     //...
 
     // materials
@@ -128,84 +198,67 @@ int main(int argc, char* argv[])  {
     world.addSphere(Maths::Vec3(-1, 0, -1), 0.5,&*glass);  
     world.addSphere(Maths::Vec3(0, 0, -1), 0.5, &*lambertMiddle); 
     //...
-   
-    // used to print diagonostics
-    auto index = 0;
-    auto percentComplete = 0;
-    auto onePercent = (width * height * maxSamples) / 100;
-    //...
 
-    // render critial variables
-    Window window("PathTracer", x, y, width, height);
-    Camera cam(Maths::Vec3(0,0,4), 70, (float) width / (float)height);
-    MultiArray<Maths::Vec3, width, height> pixels;
-    bool running = true;
-    auto currentSamples = 0;
-    using Clock = std::chrono::system_clock;
-    //..
+    // mutithreaded trace of scene
+    auto logicalCoreCount =  std::thread::hardware_concurrency();
 
-    std::cout << "\n\nTrace Started" << std::endl;
-    std::cout << "-------------" << std::endl; 
+        // if cannot dettect core count set to one
+    if(logicalCoreCount == 0) {
+        logicalCoreCount = 1;
+    }
+
+    std::cout << "Cores Available: " << logicalCoreCount << std::endl;
+
+    // std::vector<std::thread> threadPool;
+
+    // for(auto i = 0; i < logicalCoreCount; i++) {
+    //     threadPool.push_back(std::thread)
+    // }
+
+    #define mutithreaded
     
-    int forward = 0; // used to flip the image for sdl drawing
-    auto startRender = Clock::now();
+    #ifdef mutithreaded // 2 threads
+        TraceJob<width, height, 0> topScreen(0, height / 2, width, height, maxSamples, cam, world, pixels);
+        TraceJob<width, height, 1> botScreen(0, 0, width, height / 2, maxSamples, cam, world, pixels);
+       
+        //RenderJob<width, height> renderJob(window, pixels, maxSamples);
+        
+        auto startRender = Clock::now();
+        std::thread t1(topScreen);
+        std::thread t2(botScreen);
+       // std::thread rt(renderJob);
 
-    for(auto s = 0; s < maxSamples; s++) {
-        for(auto j = height, forward = 0; j > 0; j--, forward++) { 
-            for(auto i = 0; i < width; i++) {
-                auto u = (float)(i + Utils::randF()) / (float)(width);
-                auto v = (float)(j + Utils::randF()) / (float)(height);
-                Ray ray(cam.getRay(u, v));
-                pixels(i,j) += ::colour(ray, world, 0);
+        t1.join();
+        t2.join();
+      //  rt.join();
 
-                // draw current pixel to screen
-                Maths::Vec3  temp = pixels(i,j);
-                temp /= s + 1;
-                temp = Maths::Vec3(sqrtf(temp.getX()), sqrtf(temp.getY()), sqrtf(temp.getZ()));
-                int ir = static_cast<int>(255.99 * temp.getX());
-                int ig = static_cast<int>(255.99 * temp.getY());
-                int ib = static_cast<int>(255.99 * temp.getZ());
-                window.output(ir, ig, ib, i, forward);
-                //...
+        auto endRender = Clock::now();
+    #else
+        TraceJob<width, height> allScreen(0, 0, width, height, maxSamples, cam, world, pixels);
+        auto startRender = Clock::now();
+        std::thread t3(allScreen);
+        t3.join();
+        auto endRender = Clock::now();
+    #endif
 
-                // calculate and print percentage complete
-                index++;
-                if(index > onePercent) {
-                    index = 0;
-                    std::cout << "(" << percentComplete << ")%" << std::endl;
-                    percentComplete++;
-                }
-                //...
-            }
-        }
-        window.swapBackBuffer();
 
-        // check if the window has been closed
-        window.eventLoop(running);
-        if(!running) {
-            currentSamples = s + 1;
-            break;
-        }
-        //...
-    }
-    auto endRender = std::chrono::system_clock::now();
-
-    // output file 
-    if(running) {
-        if(!::writeToFile(outputLocation, maxSamples, pixels)) return -1;
-    } else {
-        if(!::writeToFile(outputLocation, currentSamples, pixels)) return -1;
-    }
+    
     //...
 
-    // print diognostics
-    std::cout << "\n\nTrace Info" << std::endl;
-    std::cout << "-------------" << std::endl;
-    std::cout << "Trace time [in milliseconds]: " << std::chrono::duration_cast<std::chrono::milliseconds>(endRender - startRender).count() << "ms"<< std::endl;
-    std::cout << "Trace time [in seconds]:      " << std::chrono::duration_cast<std::chrono::seconds>(endRender - startRender).count() << "s"<< std::endl;
-    std::cout << "Total Rays:                   " << width * height * currentSamples << std::endl;
-    std::cout << "Samples:                      " << currentSamples << std::endl;
-    std::cout << "Samples Per Second            " << static_cast<float>(currentSamples) / static_cast<float>(std::chrono::duration_cast<std::chrono::seconds>(endRender - startRender).count()) << std::endl;
-    //...
+    std::cout << "trace time (s): " << std::chrono::duration_cast<std::chrono::seconds>(endRender - startRender).count() << std::endl;
+   
+ 
+
+    if(!::writeToFile(outputLocation, maxSamples, pixels)) return -1;
+
     return 0;
 }
+
+// threads cannot write to the same array at the same time
+// each thread needs its own copy of pix array
+// merge at the end?
+
+// we could render different portions of the screen
+// or we could render different samples ie one thread renders samples 0 -> 10. other renderes 11 -> 20 then merge
+
+// store N pixel arrays in main(). N = thread count. each thread gets past unique pixel array. once all threads are finished. merge image!!!!!!!!!!!!!!!!
