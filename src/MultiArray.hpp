@@ -5,12 +5,35 @@ template<typename T, int width, int height>
 class MultiArray
 {
 public:
-    T& operator() (int x, int y) { return data[x][y]; }
-    MultiArray() { data = new cols[width]; }
-    ~MultiArray() { delete [] data; }
+    MultiArray() { 
+        m_data = new T[width * height];
+
+        if(m_data == 0) {
+            std::cout << "multi array failed: out of memory" << std::endl;
+            exit(-1);
+        }
+    }
+
+    // access as 1D array
+    T & operator() (int x) {
+         return m_data[x]; // row order
+    }
+
+    // access as 2D array
+    T & operator() (int x, int y) {
+        return m_data[width * x + y];
+    }
+    
+    ~MultiArray() {
+         delete [] m_data; 
+    }
+
+    T * getData() {
+         return m_data;
+    }
+
 private:
-    typedef T cols[height];
-    cols * data;
+    T * m_data;
 };
 
 #endif /* MultiArray_hpp */

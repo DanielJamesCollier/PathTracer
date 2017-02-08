@@ -12,7 +12,6 @@
 #include "Vec3.hpp"
 #include "Ray.hpp"
 #include "Hitable.hpp"
-
 #include "Material.hpp"
 
 class Sphere : public Hitable {
