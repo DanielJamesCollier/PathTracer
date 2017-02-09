@@ -108,12 +108,10 @@ struct TraceJob {
     }
     
     void operator() () {
-        //@fix sometimes threads can call this at the same time making the console output mixed
         MutexPrint{} << "[" << m_id << "]Thread launched" << std::endl;
 
         for(auto s = 0; s < m_samples; s++) {
             if(!m_running) {
-                //@fix sometimes threads can call this at the same time making the console output mixed
                 MutexPrint{} << "[" << m_id << "]Thread termined before finished" << std::endl;
                 return;
             }
@@ -127,8 +125,6 @@ struct TraceJob {
                 }
             }
         }
-
-        //@fix sometimes threads can call this at the same time making the console output mixed
         MutexPrint{} << "[" << m_id << "]Thread finished" << std::endl;
     }
 
@@ -143,7 +139,7 @@ private:
     Scene const & m_scene;
     MultiArray<Maths::Vec3, ScreenWidth, ScreenHeight> & m_pixels;
     bool & m_running;
-};    
+};
 
 //---------------------------------------------------------
 int main(int argc, char* argv[])  {
@@ -152,32 +148,36 @@ int main(int argc, char* argv[])  {
     const int x = 0; // x: 0 - y: 0 seems to make the window border get cut off -_-
     const int y = 20;
     const int width = 1000; //@Todo: make sure width and height are divisable by two aka even
-    const int height = 500;
-    const int maxSamples = 2000;
+    const int height = width * 9 / 16;
+    const int maxSamples = 1000;
     const auto outputLocation = "./render.ppm"s;
     bool running = true;
     Window window("PathTracer", x, y, width, height);
     MultiArray<Maths::Vec3, width, height> pixels;
-    Camera cam(Maths::Vec3(0,0,4), 70, (float) width / (float)height);
+    Camera cam(Maths::Vec3(0,0,3), 70, (float) width / (float)height);
 	using Clock = std::chrono::system_clock;
 
-    // materials
+    // materials -- S= soft | R = reflective
 	//------------------------
-    auto lambertFloor = std::make_unique<Lambertian>(Maths::Vec3(0.8f, 0.8f, 0.0f));
-    auto lambertMiddle = std::make_unique<Lambertian>(Maths::Vec3(0.8f, 0.3f, 0.3f));
-    auto leftMetal = std::make_unique<Metal>(Maths::Vec3(0.8f, 0.8f, 0.8f), 1.0f);
-    auto rightMetal = std::make_unique<Metal>(Maths::Vec3(0.8f, 0.6f, 0.2f), 0.1f);
+
+    auto metalS = std::make_unique<Metal>(Maths::Vec3(0.8f, 0.8f, 0.8f), 1.0f);
+    auto metalR = std::make_unique<Metal>(Maths::Vec3(0.8f, 0.6f, 0.2f), 0.1f);
+
     auto glass = std::make_unique<Dialectric>(1.5f);
+    auto metal_RoseGold = std::make_unique<Metal>(Maths::Vec3(0.71484375f, 0.4296875f, 0.47265625f), 0.1f);
+    auto lambert = std::make_unique<Lambertian>(Maths::Vec3(0.8f, 0.3f, 0.3f));
 
     // add spheres to world
 	//------------------------
     Scene world;
-    world.addSphere(Maths::Vec3(0, -100.5, -1), 100, &*lambertFloor);
-    world.addSphere(Maths::Vec3(1, 2.5, -8), 3, &*rightMetal); 
-    world.addSphere(Maths::Vec3(2, 0, -1), 0.5, &*rightMetal);
-    world.addSphere(Maths::Vec3(1, 0, -1), 0.5, &*leftMetal);
-    world.addSphere(Maths::Vec3(-1, 0, -1), 0.5,&*glass);  
-    world.addSphere(Maths::Vec3(0, 0, -1), 0.5, &*lambertMiddle);
+    world.addSphere(Maths::Vec3(0, -100.5, -1), 100, &*metal_RoseGold);
+    world.addSphere(Maths::Vec3(0, 2.5, -8), 3, &*metal_RoseGold); // ball at back 
+
+    world.addSphere(Maths::Vec3(2, 0, -1), 0.5, &*metal_RoseGold);         // right
+    world.addSphere(Maths::Vec3(1, 0, -1), 0.5, &*lambert);     // middle right
+    world.addSphere(Maths::Vec3(-2, 0, -1), 0.5,&*metal_RoseGold);     // left
+    world.addSphere(Maths::Vec3(-1, 0, -1), 0.5,&*lambert);         // middle left
+    world.addSphere(Maths::Vec3(0, 0, -1), 0.5, &*glass); // middle ball
 	
 	// render
 	//------------------------
@@ -188,7 +188,7 @@ int main(int argc, char* argv[])  {
         logicalCoreCount = 1;
     }
 
-    std::cout << "Cores Available: " << logicalCoreCount << std::endl;
+    std::cout << "Cores Available: " << logicalCoreCount << "\nMain Thread running..." << std::endl;
 
     if(true) {
 
@@ -213,11 +213,7 @@ int main(int argc, char* argv[])  {
             }
         }
 
-        // @Speed - make render function faster
-        auto startFrame = Clock::now();
         while(running) {
-            auto current = Clock::now();
-
             window.eventLoop(running);
             window.draw(pixels, maxSamples); // takes fucking ages
         }

@@ -14,14 +14,14 @@ public:
     MutexPrint() = default;
 
     ~MutexPrint() {
-        std::lock_guard<std::mutex> guard(_mutexPrint);
+        std::lock_guard<std::mutex> guard(sm_mutexPrint);
         std::cout << this->str();
     }
 
 private:
-    static std::mutex _mutexPrint;
+    static std::mutex sm_mutexPrint;
 };
 
-std::mutex MutexPrint::_mutexPrint{};
+std::mutex MutexPrint::sm_mutexPrint{};
 
 #endif /* MutexPrint_hpp */
