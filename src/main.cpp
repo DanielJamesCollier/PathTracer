@@ -25,6 +25,7 @@
 #include "Scene.hpp"
 #include "Window.hpp"
 #include "MultiArray.hpp"
+#include "MutexPrint.hpp"
 
 using namespace std::string_literals;
 
@@ -108,11 +109,12 @@ struct TraceJob {
     
     void operator() () {
         //@fix sometimes threads can call this at the same time making the console output mixed
-        std::cout << "[" << m_id << "]Thread launched" << std::endl;
+        MutexPrint{} << "[" << m_id << "]Thread launched" << std::endl;
 
         for(auto s = 0; s < m_samples; s++) {
             if(!m_running) {
-                std::cout << "thread termined before finished" << std::endl;
+                //@fix sometimes threads can call this at the same time making the console output mixed
+                MutexPrint{} << "[" << m_id << "]Thread termined before finished" << std::endl;
                 return;
             }
 
@@ -127,7 +129,7 @@ struct TraceJob {
         }
 
         //@fix sometimes threads can call this at the same time making the console output mixed
-        std::cout << "[" << m_id << "]Thread finished" << std::endl;
+        MutexPrint{} << "[" << m_id << "]Thread finished" << std::endl;
     }
 
 private:
