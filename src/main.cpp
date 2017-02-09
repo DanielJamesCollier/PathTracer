@@ -70,17 +70,18 @@ bool writeToFile(std::string fileLocation,int samples, MultiArray<Maths::Vec3, w
     // intialise the string buffer with the .ppm header
     std::string buffer = "P3\n" + std::to_string(width) + " " + std::to_string(height) + "\n255\n";
 
-    // convert pixel array into string array
-    for(auto i = width * height; i > 0; i--) {
-        Maths::Vec3 & pixel = pixels(i);
-        pixel /= static_cast<float>(samples);
-        pixel = Maths::Vec3(sqrtf(pixel.getX()), sqrtf(pixel.getY()), sqrtf(pixel.getZ()));
-        int ir = static_cast<int>(255.99 * pixel.getX());
-        int ig = static_cast<int>(255.99 * pixel.getY());
-        int ib = static_cast<int>(255.99 * pixel.getZ());
+    for(auto y = height - 1; y > 0; y--) { 
+        for(auto x = 0; x < width; x++) {  
+            Maths::Vec3 & pixel = pixels(y, x);
+            pixel /= static_cast<float>(samples);
+            pixel = Maths::Vec3(sqrtf(pixel.getX()), sqrtf(pixel.getY()), sqrtf(pixel.getZ()));
+            int ir = static_cast<int>(255.99 * pixel.getX());
+            int ig = static_cast<int>(255.99 * pixel.getY());
+            int ib = static_cast<int>(255.99 * pixel.getZ());
 
-        std::string rgb_string = std::to_string(ir) + " " + std::to_string(ig) + " " + std::to_string(ib) + "\n";
-        buffer += rgb_string;
+            std::string rgb_string = std::to_string(ir) + " " + std::to_string(ig) + " " + std::to_string(ib) + "\n";
+            buffer += rgb_string;
+        }
     }
     file << buffer;
     std::cout << fileLocation << " written to disk" << std::endl;
@@ -88,10 +89,11 @@ bool writeToFile(std::string fileLocation,int samples, MultiArray<Maths::Vec3, w
 }
 
 //---------------------------------------------------------
-template<int ScreenWidth, int ScreenHeight, int TraceJobID>
+template<int ScreenWidth, int ScreenHeight>
 struct TraceJob {
-    TraceJob(int xBegin, int yBegin, int xEnd, int yEnd, int samples, Camera const & camera, Scene const & scene, MultiArray<Maths::Vec3, ScreenWidth, ScreenHeight> & pixels, bool & running) :
-        m_xBegin(xBegin)
+    TraceJob(int id, int xBegin, int yBegin, int xEnd, int yEnd, int samples, Camera const & camera, Scene const & scene, MultiArray<Maths::Vec3, ScreenWidth, ScreenHeight> & pixels, bool & running) :
+        m_id(id)
+    ,   m_xBegin(xBegin)
     ,   m_yBegin(yBegin)
     ,   m_xEnd(xEnd)
     ,   m_yEnd(yEnd)
@@ -105,21 +107,31 @@ struct TraceJob {
     }
     
     void operator() () {
+        //@fix sometimes threads can call this at the same time making the console output mixed
+        std::cout << "[" << m_id << "]Thread launched" << std::endl;
+
         for(auto s = 0; s < m_samples; s++) {
-            if(!m_running) break;
+            if(!m_running) {
+                std::cout << "thread termined before finished" << std::endl;
+                return;
+            }
+
 		    for(auto y = m_yBegin; y < m_yEnd; y++) { 
                 for(auto x = m_xBegin; x < m_xEnd; x++) {     
 		            auto u = (float)(x + Utils::randF()) / (float)(ScreenWidth);
                     auto v = (float)(y + Utils::randF()) / (float)(ScreenHeight);
                     Ray ray(m_camera.getRay(u, v));
-                    m_pixels(y,x) += ::colour(ray, m_scene, 0); //@TODO : y and x wrong way ?
+                    m_pixels(y, x) += ::colour(ray, m_scene, 0); //@TODO : y and x wrong way ?
                 }
             }
         }
-        std::cout << "trace thread finished" << std::endl;
+
+        //@fix sometimes threads can call this at the same time making the console output mixed
+        std::cout << "[" << m_id << "]Thread finished" << std::endl;
     }
 
 private:
+    int m_id;
     int m_xBegin;
     int m_yBegin;
     int m_xEnd;
@@ -139,7 +151,7 @@ int main(int argc, char* argv[])  {
     const int y = 20;
     const int width = 1000; //@Todo: make sure width and height are divisable by two aka even
     const int height = 500;
-    const int maxSamples = 1000;
+    const int maxSamples = 2000;
     const auto outputLocation = "./render.ppm"s;
     bool running = true;
     Window window("PathTracer", x, y, width, height);
@@ -184,24 +196,20 @@ int main(int argc, char* argv[])  {
         //logicalCoreCount = 1;
 
         if(logicalCoreCount == 1) { // @Fix: this would mean that two threads are running - main thread & one trace thread
-             std::cout << "Single Threaded Mode..." << std::endl;
-             TraceJob<width, height, 0> job(0, 0, width, height, maxSamples, cam, world, pixels, running);
+             TraceJob<width, height> job(1, 0, 0, width, height, maxSamples, cam, world, pixels, running);
              traceJobs.push_back(std::thread(job));
         } else  {
-            std::cout << "Multi-Threaded Mode..." << std::endl;
             logicalCoreCount -= 1; // if 4 cores available, launch 3 trace threads, 3 trace + 1 main = 4 total
             for(int i = 0; i < logicalCoreCount; i++) {
                 if(i == 0) {
-                    TraceJob<width, height, 0> job(0, 0, width, height / logicalCoreCount, maxSamples, cam, world, pixels, running);
+                    TraceJob<width, height> job(i, 0, 0, width, height / logicalCoreCount, maxSamples, cam, world, pixels, running);
                     traceJobs.push_back(std::thread(job));
                 } else {
-                   TraceJob<width, height, 0> job(0, height * ((float)i / (float)logicalCoreCount), width, height * ((float)(i + 1.0f) / (float)logicalCoreCount), maxSamples, cam, world, pixels, running);
+                   TraceJob<width, height> job(i, 0, height * ((float)i / (float)logicalCoreCount), width, height * ((float)(i + 1.0f) / (float)logicalCoreCount), maxSamples, cam, world, pixels, running);
                    traceJobs.push_back(std::thread(job));
                 }
             }
         }
-
-        std::cout << logicalCoreCount << " Threads Launched" << std::endl;
 
         // @Speed - make render function faster
         auto startFrame = Clock::now();
@@ -210,7 +218,6 @@ int main(int argc, char* argv[])  {
 
             window.eventLoop(running);
             window.draw(pixels, maxSamples); // takes fucking ages
-        
         }
         
         for(auto & job : traceJobs) {

@@ -49,16 +49,6 @@ public:
             SDL_Quit();
             exit(-1);
         }
-        
-        // render info
-        //---------------------------------------------------------
-        SDL_RendererInfo info;
-        SDL_GetRendererInfo(m_renderer, &info );
-        std::cout << "Renderer name: " << info.name << std::endl;
-        std::cout << "Texture formats: " << std::endl;
-        for( Uint32 i = 0; i < info.num_texture_formats; i++ ) {
-            std::cout << SDL_GetPixelFormatName( info.texture_formats[i] ) << std::endl;
-        }
 
         // create render buffer
         //---------------------------------------------------------
@@ -98,30 +88,27 @@ public:
             }
         }
     }
-    
-    void output(int r, int g, int b, int x, int y) {
-        SDL_SetRenderDrawColor(m_renderer, r, g, b, 255);
-        SDL_RenderDrawPoint(m_renderer, x, y); 
-    }
 
     template<int width, int height>
     void draw(MultiArray<Maths::Vec3, width, height> & pixels, int numSamples) {
         
         auto index = 0;
-        for(auto i = width * height; i > 0 ; i--) {
-            Maths::Vec3 pixel = pixels(i);
-            pixel /= static_cast<float>(numSamples);
-            pixel = Maths::Vec3(sqrtf(pixel.getX()), sqrtf(pixel.getY()), sqrtf(pixel.getZ()));
-           
-            unsigned char r = static_cast<unsigned char>(255.99 * pixel.getX());
-            unsigned char g = static_cast<unsigned char>(255.99 * pixel.getY());
-            unsigned char b = static_cast<unsigned char>(255.99 * pixel.getZ());
+        for (auto y = height - 1; y > 0; y--) { 
+            for (auto x = 0; x < width; x++) {  
+                Maths::Vec3 pixel = pixels(y, x);
+                pixel /= static_cast<float>(numSamples);
+                pixel = Maths::Vec3(sqrtf(pixel.getX()), sqrtf(pixel.getY()), sqrtf(pixel.getZ()));
+            
+                unsigned char r = static_cast<unsigned char>(255.99 * pixel.getX());
+                unsigned char g = static_cast<unsigned char>(255.99 * pixel.getY());
+                unsigned char b = static_cast<unsigned char>(255.99 * pixel.getZ());
 
-            m_pixels[index + 0] = r;
-            m_pixels[index + 1] = g;
-            m_pixels[index + 2] = b;
-            m_pixels[index + 3] = SDL_ALPHA_OPAQUE;
-            index+=4;
+                m_pixels[index + 0] = b; // blue ?
+                m_pixels[index + 1] = g; // green
+                m_pixels[index + 2] = r; // red
+                m_pixels[index + 3] = SDL_ALPHA_OPAQUE;
+                index+=4;
+            }
         }
 
 

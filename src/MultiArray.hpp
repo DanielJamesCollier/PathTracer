@@ -14,18 +14,18 @@ public:
         }
     }
 
-    // access as 1D array
-    T & operator() (int x) {
-         return m_data[x]; // row order
-    }
-
-    // access as 2D array
-    T & operator() (int x, int y) {
-        return m_data[width * x + y];
-    }
-    
     ~MultiArray() {
          delete [] m_data; 
+    }
+
+    // access as 1D array
+    T & operator() (int x) {
+         return m_data[x];
+    }
+
+    // access as 2D array - row major
+    T & operator() (int row, int col) {
+        return m_data[width * row + col];
     }
 
     T * getData() {
