@@ -5,15 +5,9 @@
 #include <fstream>
 #include <string>
 
-#if defined(_WIN32)
-#   include "../build/Windows/deps/SDL2/include/SDL.h"
-#elif defined(__APPLE__)
-#   include "../build/Mac/deps/SDL2.framework/Versions/A/Headers/SDL.h"
-#else
-#   error "system not supported"
-#endif
+#include "SDL2/SDL.h"
 
-#include "MultiArray.hpp"
+#include "Usings.hpp"
 
 class Window final {
 public:
@@ -89,13 +83,13 @@ public:
         }
     }
 
-    template<int width, int height>
-    void draw(MultiArray<Maths::Vec3, width, height> & pixels, int numSamples) {
+    template<size_t WIDTH, size_t HEIGHT>
+    void draw(Usings::Array2D<Maths::Vec3, WIDTH, HEIGHT> & pixels, int numSamples) {
         
         auto index = 0;
-        for (auto y = height - 1; y > 0; y--) { 
-            for (auto x = 0; x < width; x++) {  
-                Maths::Vec3 pixel = pixels(y, x);
+        for (auto y = HEIGHT - 1; y > 0; y--) { 
+            for (auto x = 0; x < WIDTH; x++) {  
+                Maths::Vec3 pixel = pixels[y][x];
                 pixel /= static_cast<float>(numSamples);
                 pixel = Maths::Vec3(sqrtf(pixel.getX()), sqrtf(pixel.getY()), sqrtf(pixel.getZ()));
             
@@ -112,7 +106,7 @@ public:
         }
 
 
-        int error = SDL_UpdateTexture(m_renderTexture, NULL, &m_pixels[0], width * 4);
+        int error = SDL_UpdateTexture(m_renderTexture, NULL, &m_pixels[0], WIDTH * 4);
         SDL_RenderCopy( m_renderer, m_renderTexture, NULL, NULL );
         SDL_RenderPresent(m_renderer);
     }
