@@ -1,12 +1,12 @@
 #ifndef HitRecord_hpp
 #define HitRecord_hpp
 
-#include "Vec3.hpp"
+#include "djc_math/Vec3.hpp"
 
 struct HitRecord {
     float time;
-    Maths::Vec3 point;
-    Maths::Vec3 normal;
+    djc_math::Vec3f point;
+    djc_math::Vec3f normal;
     class Material * ptr_mat = nullptr;
 };
 

@@ -3,12 +3,12 @@
 
 #include "Ray.hpp"
 #include "HitRecord.hpp"
-#include "Vec3.hpp"
+#include "djc_math/Vec3.hpp"
 #include "Utils.hpp"
 
 class Material {
 public:
-    virtual bool scatter(Ray const & ray, HitRecord const & record, Maths::Vec3 & attenuation, Ray & scattered) const {
+    virtual bool scatter(Ray const & ray, HitRecord const & record, djc_math::Vec3f & attenuation, Ray & scattered) const {
        // std::cout << "Default Scatter" << std::endl;
         return false;
     }
@@ -16,14 +16,14 @@ public:
 
 class Lambertian final : public Material {
 public:
-    explicit Lambertian(Maths::Vec3 const & albedo) :
+    explicit Lambertian(djc_math::Vec3f const & albedo) :
         m_albedo(albedo)
     {
         //empty
     }
 
-    virtual bool scatter(Ray const & ray, HitRecord const & record, Maths::Vec3 & attenuation, Ray & scattered) const {
-        Maths::Vec3 target(record.point + record.normal + Utils::randomInUnitSphere());
+    virtual bool scatter(Ray const & ray, HitRecord const & record, djc_math::Vec3f & attenuation, Ray & scattered) const {
+        djc_math::Vec3f target(record.point + record.normal + Utils::randomInUnitSphere());
         scattered = Ray(record.point, target - record.point);
         attenuation = m_albedo;
         return true;
@@ -31,27 +31,27 @@ public:
     }
 
 private:
-    Maths::Vec3 m_albedo;
+    djc_math::Vec3f m_albedo;
 };
 
 class Metal final : public Material {
 public:
-    Metal(Maths::Vec3 const & albedo, float fuzz) :
+    Metal(djc_math::Vec3f const & albedo, float fuzz) :
         m_albedo(albedo)
     ,   m_fuzz(fuzz > 1 ? 1 : fuzz)
     {
         // empty
     }
 
-    virtual bool scatter(Ray const & ray, HitRecord const & record, Maths::Vec3 & attenuation, Ray & scattered) const {
-        Maths::Vec3 reflected = Utils::reflect(Maths::normalise(ray.direction()), record.normal);
+    virtual bool scatter(Ray const & ray, HitRecord const & record, djc_math::Vec3f & attenuation, Ray & scattered) const {
+        djc_math::Vec3f reflected = Utils::reflect(djc_math::normalise(ray.direction()), record.normal);
         scattered = Ray(record.point, reflected + m_fuzz * Utils::randomInUnitSphere());
         attenuation = m_albedo;
-        return (Maths::dot(scattered.direction(), record.normal) > 0);
+        return (scattered.direction()).dot(record.normal) > 0;
     }
 
 private:
-        Maths::Vec3 m_albedo;
+        djc_math::Vec3f m_albedo;
         float m_fuzz;
 };
 
@@ -63,15 +63,15 @@ public:
         //empty
     }
 
-    virtual bool scatter(Ray const & ray, HitRecord const & record, Maths::Vec3 & attenuation, Ray & scattered) const {
-        Maths::Vec3 outwardNormal;
-        Maths::Vec3 reflected = Utils::reflect(ray.direction(), record.normal);
+    virtual bool scatter(Ray const & ray, HitRecord const & record, djc_math::Vec3f & attenuation, Ray & scattered) const {
+        djc_math::Vec3f outwardNormal;
+        djc_math::Vec3f reflected = Utils::reflect(ray.direction(), record.normal);
         float ni_over_nt;
-        attenuation = Maths::Vec3(1.0f, 1.0f, 1.0f);
+        attenuation = djc_math::Vec3f(1.0f, 1.0f, 1.0f);
 
-        Maths::Vec3 refracted;
+        djc_math::Vec3f refracted;
 
-        if(Maths::dot(ray.direction(), record.normal) > 0) {
+        if(djc_math::dot(ray.direction(), record.normal) > 0) {
             outwardNormal = -record.normal;
             ni_over_nt = m_refractiveIndex;
         } else {

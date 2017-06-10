@@ -1,3 +1,4 @@
 set (SOURCEFILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Window.cpp
     PARENT_SCOPE)

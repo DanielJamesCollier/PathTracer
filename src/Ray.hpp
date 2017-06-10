@@ -10,7 +10,7 @@
 #define Ray_hpp
 
 #include <stdio.h>
-#include "Vec3.hpp"
+#include "djc_math/Vec3.hpp"
 
 class Ray final {
 public:
@@ -18,25 +18,25 @@ public:
         // empty
     }
     
-    Ray(Maths::Vec3 const & origin, Maths::Vec3 const & direction) :
+    Ray(djc_math::Vec3f const & origin, djc_math::Vec3f const & direction) :
         m_origin(origin)
     ,   m_direction(direction) {
         //empty
     }
     
-    Maths::Vec3 const & origin() const {
+    djc_math::Vec3f const & origin() const {
         return m_origin;
     }
-    Maths::Vec3 const & direction() const {
+    djc_math::Vec3f const & direction() const {
         return m_direction;
     }
     
-    Maths::Vec3 pointAtParam(float t) const {
+    djc_math::Vec3f pointAtParam(float t) const {
         return m_origin + t * m_direction;
     }
 
 private:
-    Maths::Vec3 m_origin;
-    Maths::Vec3 m_direction;
+    djc_math::Vec3f m_origin;
+    djc_math::Vec3f m_direction;
 };
 #endif /* Ray_hpp */

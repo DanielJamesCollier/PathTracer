@@ -10,11 +10,13 @@
 #include "HitRecord.hpp"
 #include "Material.hpp"
 
+#include "djc_math/Vec3.hpp"
+
 class Scene final {
 public:
     Scene() = default;
 
-    void addSphere(Maths::Vec3 const & location, float radius, Material * material) {
+    void addSphere(djc_math::Vec3f const & location, float radius, Material * material) {
         m_scene.push_back(std::make_unique<Sphere>(location, radius, material));
     }
 

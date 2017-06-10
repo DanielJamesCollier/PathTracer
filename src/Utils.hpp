@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 #include <cmath>
-#include "Vec3.hpp"
+#include "djc_math/Vec3.hpp"
 
 namespace Utils {
 
@@ -17,18 +17,18 @@ namespace Utils {
 
     //---------------------------------------------------------
     //#include "Vec3.hpp"
-    Maths::Vec3 reflect(Maths::Vec3 const & lhs, Maths::Vec3 const & rhs) {
-        return lhs - 2 * Maths::dot(lhs, rhs) * rhs;
+    djc_math::Vec3f reflect(djc_math::Vec3f const & lhs, djc_math::Vec3f const & rhs) {
+        return lhs - 2 * lhs.dot(rhs) * rhs;
     }
 
     //---------------------------------------------------------
     //#include "Vec3.hpp"
-    Maths::Vec3 randomInUnitSphere() {
-        Maths::Vec3 p;
+    djc_math::Vec3f randomInUnitSphere() {
+        djc_math::Vec3f p;
         do {
-            Maths::Vec3 randVec(Utils::randF(), Utils::randF(), Utils::randF());
-            p = 2.0 * randVec - Maths::Vec3(1,1,1);
-        } while(Maths::length2(p) >= 1.0f);
+            djc_math::Vec3f randVec(Utils::randF(), Utils::randF(), Utils::randF());
+            p = 2.0f * randVec - djc_math::Vec3f(1,1,1);
+        } while(p.length2() >= 1.0f);
         return p;
     }
 
@@ -41,13 +41,13 @@ namespace Utils {
     }
 
     //---------------------------------------------------------
-    bool refract(Maths::Vec3 const & v, Maths::Vec3 const & n, float niOverNt, Maths::Vec3 & refracted) {
-        Maths::Vec3 uv = Maths::normalise(v);
-        float dt = Maths::dot(uv, n);
+    bool refract(djc_math::Vec3f const & v, djc_math::Vec3f const & n, float niOverNt, djc_math::Vec3f & refracted) {
+        djc_math::Vec3f uv = djc_math::normalise(v);
+        float dt = uv.dot(n);
         float discriminant = 1.0f - niOverNt * niOverNt * (1 - dt * dt);
 
         if(discriminant > 0.0f) {
-            refracted = niOverNt * (uv - n * dt) - n * sqrt(discriminant);
+            refracted = niOverNt * (uv - n * dt) - n * sqrtf(discriminant);
             return true;
         } else {
             return false;

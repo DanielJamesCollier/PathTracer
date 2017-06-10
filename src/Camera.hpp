@@ -9,15 +9,20 @@
 #ifndef Camera_h
 #define Camera_h
 
-#include "Vec3.hpp"
+// own
 #include "Ray.hpp"
 #include "Utils.hpp"
+
+// djc_math
+#include "djc_math/Vec3.hpp"
+
+// std
 #include <cmath>
 
 //------------------------------------------------------------
 class Camera final {
 public:
-    Camera(Maths::Vec3 const & position, float fov, float aspect) :
+    Camera(djc_math::Vec3f const & position, float fov, float aspect) :
         m_fov(fov)
     ,   m_aspect(aspect)
      {
@@ -25,9 +30,9 @@ public:
         float halfHeight = tan(theta / 2);
         float halfWidth = aspect * halfHeight;
 
-        m_lowerLeftCorner = Maths::Vec3(-halfWidth, -halfHeight, -1.0f);
-        m_right = Maths::Vec3(2 * halfWidth, 0.0f, 0.0f);
-        m_up = Maths::Vec3(0.0f, 2 * halfHeight, 0.0f);
+        m_lowerLeftCorner = djc_math::Vec3f(-halfWidth, -halfHeight, -1.0f);
+        m_right = djc_math::Vec3f(2 * halfWidth, 0.0f, 0.0f);
+        m_up = djc_math::Vec3f(0.0f, 2 * halfHeight, 0.0f);
         m_position = position;
     }
 
@@ -36,10 +41,10 @@ public:
     }
 
 private:
-    Maths::Vec3 m_position;
-    Maths::Vec3 m_lowerLeftCorner;
-    Maths::Vec3 m_right;
-    Maths::Vec3 m_up;
+    djc_math::Vec3f m_position;
+    djc_math::Vec3f m_lowerLeftCorner;
+    djc_math::Vec3f m_right;
+    djc_math::Vec3f m_up;
     float m_fov;
     float m_aspect;
 };

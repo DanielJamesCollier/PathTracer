@@ -9,14 +9,14 @@
 #ifndef Sphere_hpp
 #define Sphere_hpp
 
-#include "Vec3.hpp"
+#include "djc_math/Vec3.hpp"
 #include "Ray.hpp"
 #include "Hitable.hpp"
 #include "Material.hpp"
 
 class Sphere : public Hitable {
 public:
-    Sphere(Maths::Vec3 centre, float radius, Material * material) :
+    Sphere(djc_math::Vec3f centre, float radius, Material * material) :
         m_centre(centre)
     ,   m_radius(radius)
     ,   m_material(material) 
@@ -28,7 +28,7 @@ public:
         // empty - virtual because Hitable is an abstract class
     }
     
-    Maths::Vec3 const & centre() const {
+    djc_math::Vec3f const & centre() const {
         return m_centre;
     }
     
@@ -37,10 +37,10 @@ public:
     }
 
     virtual bool hit(Ray const & ray, float minT, float maxT, HitRecord & record) final {
-        Maths::Vec3 oc = ray.origin() - m_centre;
-        auto a = Maths::dot(ray.direction(), ray.direction());
-        auto b = Maths::dot(oc, ray.direction());
-        auto c = Maths::dot(oc, oc) - (m_radius * m_radius);
+        djc_math::Vec3f oc = ray.origin() - m_centre;
+        auto a = djc_math::dot(ray.direction(), ray.direction());
+        auto b = djc_math::dot(oc, ray.direction());
+        auto c = djc_math::dot(oc, oc) - (m_radius * m_radius);
         auto discriminant = b * b - a * c;
         
         if(discriminant > 0) {
@@ -68,7 +68,7 @@ public:
     }
     
 private:
-    Maths::Vec3 m_centre;
+    djc_math::Vec3f m_centre;
     float       m_radius;
     Material *  m_material;
 };

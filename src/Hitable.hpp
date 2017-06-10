@@ -1,7 +1,7 @@
 #ifndef Hitable_h
 #define Hitable_h
 
-#include "Vec3.hpp"
+#include "djc_math/Vec3.hpp"
 #include "Ray.hpp"
 #include "HitRecord.hpp"
 
