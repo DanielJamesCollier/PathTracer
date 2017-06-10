@@ -166,15 +166,13 @@ int main(int argc, char* argv[])  {
 
     // image specification
 	//------------------------
-    const int x          = 0; // x: 0 - y: 0 seems to make the window border get cut off -_-
-    const int y          = 20;
     const int width      = 500; //@Todo: make sure width and height are divisable by two aka even
     const int height     = width * 9 / 16;
     const int maxSamples = 20;
     const auto outputLocation = "./render.ppm"s;
     bool running = true;
 
-    Window window("PathTracer", x, y, width, height);
+    Window window("PathTracer", width, height);
     Array2D<djc_math::Vec3f, width, height> pixels;
     Camera cam(djc_math::Vec3f(0,0,3), 70, (float) width / (float)height);
 
