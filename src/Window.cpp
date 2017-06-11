@@ -53,3 +53,37 @@ Window::eventLoop(bool & running) {
         }
     }
 }
+
+ void 
+ Window::draw(std::vector<std::vector<djc_math::Vec3f>> const & pixels, int numSamples) {
+
+        /*
+        - convert data from a std::vector<std::vector<djc_math::Vec3f>> to  std::vector<unsigned char>;
+        - map the pixels from range(0.0f - 1.0f) to range(0 - 255)
+        - the std::vector<unsigned char> also stores an alpha channel
+        */
+
+        auto index = 0;
+        for (auto y = 0; y < m_height; y++) { 
+            for (auto x = 0; x < m_width; x++) {  
+                djc_math::Vec3f pixel = pixels[y][x];
+                pixel /= static_cast<float>(numSamples);
+                pixel = djc_math::Vec3f(sqrtf(pixel.x), sqrtf(pixel.y), sqrtf(pixel.z));
+            
+                m_pixels[index + 0] = static_cast<unsigned char>(255.99 * pixel.z); // blue 
+                m_pixels[index + 1] = static_cast<unsigned char>(255.99 * pixel.y); // green
+                m_pixels[index + 2] = static_cast<unsigned char>(255.99 * pixel.x); // red
+                m_pixels[index + 3] = SDL_ALPHA_OPAQUE;
+                index+=4;
+            }
+        }
+
+        /*
+         - update a texture with m_pixels
+         - copy the texture contexts into the renderer
+         - push the renderer with its new pixels to the screen
+        */
+        int error = SDL_UpdateTexture(m_renderTexture, NULL, &m_pixels[0], m_width * 4);
+        SDL_RenderCopyEx(m_renderer, m_renderTexture, NULL, NULL, 0, NULL, SDL_FLIP_VERTICAL);
+        SDL_RenderPresent(m_renderer);
+    }

@@ -1,16 +1,19 @@
 #ifndef Scene_hpp
 #define Scene_hpp
 
-#include <vector>
-#include <memory>
-#include <limits>
-
+// own
 #include "Sphere.hpp"
 #include "Hitable.hpp"
 #include "HitRecord.hpp"
 #include "Material.hpp"
 
+// djc_math
 #include "djc_math/Vec3.hpp"
+
+// std
+#include <vector>
+#include <memory>
+#include <limits>
 
 class Scene final {
 public:
@@ -36,6 +39,6 @@ public:
     }
 
 private:
-    std::vector<std::unique_ptr<Hitable> > m_scene;
+    std::vector<std::unique_ptr<Hitable>> m_scene;
 };
 #endif /* Scene_hpp */

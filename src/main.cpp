@@ -14,6 +14,7 @@
 #include "Scene.hpp"
 #include "Window.hpp"
 #include "MutexPrint.hpp"
+#include "Tracer.hpp"
 
 // djc_math
 #include "djc_math/Vec3.hpp"
@@ -42,34 +43,9 @@
 //----------------------------------------
 using namespace std::string_literals;
 using Clock = std::chrono::high_resolution_clock;
-template<typename TYPE, size_t WIDTH, size_t HEIGHT>
-    using Array2D = std::array<std::array<TYPE, WIDTH>, HEIGHT>;
 
 //---------------------------------------------------------
-djc_math::Vec3f colour(Ray const r,  Scene const & world, int depth) {
-    HitRecord record;
-
-    if(world.hit(r, 0.001f, std::numeric_limits<float>::max(), record)) {
-        assert(record.ptr_mat != nullptr);
-        Ray scattered;
-        djc_math::Vec3f attenuation;
-
-        if(depth < RAY_DEPTH && record.ptr_mat->scatter(r, record, /*out var*/ attenuation, /*out var*/ scattered)) {
-            return attenuation * colour(scattered, world, depth + 1);
-        } else {
-            return djc_math::Vec3f(0, 0, 0);
-        }
-    } else { 
-        // background colour
-        djc_math::Vec3f unitDircetion = djc_math::normalise(r.direction());
-        auto t = 0.5f * (unitDircetion.y + 1.0f);
-        return (1.0f - t) * djc_math::Vec3f(1.0f, 1.0f, 1.0f) + t * djc_math::Vec3f(0.5f, 0.7f, 1.0f);
-    }
-}
-
-//---------------------------------------------------------
-template<size_t width, size_t height>
-bool writeToFile(std::string fileLocation,int samples, Array2D<djc_math::Vec3f, width, height> & pixels) {
+bool writeToFile(std::string fileLocation, int width, int height, int samples, std::vector<std::vector<djc_math::Vec3f>> & pixels) {
     std::ofstream file;
     file.open(fileLocation);
 
@@ -104,60 +80,6 @@ bool writeToFile(std::string fileLocation,int samples, Array2D<djc_math::Vec3f, 
 }
 
 //---------------------------------------------------------
-template<int ScreenWidth, int ScreenHeight>
-struct TraceJob {
-private:
-    int m_id;
-    int m_xBegin;
-    int m_yBegin;
-    int m_xEnd;
-    int m_yEnd;
-    int m_samples;
-    Camera m_camera;
-    Scene const & m_scene;
-    Array2D<djc_math::Vec3f, ScreenWidth, ScreenHeight> & m_pixels;
-    bool & m_running;
-
-public:
-    TraceJob(int id, int xBegin, int yBegin, int xEnd, int yEnd, int samples, Camera const & camera, Scene const & scene, Array2D<djc_math::Vec3f, ScreenWidth, ScreenHeight> & pixels, bool & running) :
-        m_id(id)
-    ,   m_xBegin(xBegin)
-    ,   m_yBegin(yBegin)
-    ,   m_xEnd(xEnd)
-    ,   m_yEnd(yEnd)
-    ,   m_samples(samples)
-    ,   m_camera(camera)
-    ,   m_scene(scene)
-    ,   m_pixels(pixels)
-    ,   m_running(running)
-    {
-        // empty
-    }
-    
-    void operator() () {
-        MutexPrint{} << "[" << m_id << "]Thread launched" << std::endl;
-        for(auto s = 0; s < m_samples; s++) {
-            if(!m_running) {
-                MutexPrint{} << "[" << m_id << "]Thread termined before finished" << std::endl;
-                return;
-            }
-            
-           
-
-		    for(auto y = m_yBegin; y < m_yEnd; y++) { 
-                for(auto x = m_xBegin; x < m_xEnd; x++) {     
-		            auto u = (float)(x + Utils::randF()) / (float)(ScreenWidth);
-                    auto v = (float)(y + Utils::randF()) / (float)(ScreenHeight);
-                    Ray ray(m_camera.getRay(u, v));
-                    m_pixels[y][x] += ::colour(ray, m_scene, 0); //@TODO : y and x wrong way ?
-                }
-            }
-        }
-        MutexPrint{} << "[" << m_id << "]Thread finished" << std::endl;
-    }
-};
-
-//---------------------------------------------------------
 int main(int argc, char* argv[])  {
     std::cout << "-----------------------------\n";
     std::cout << "Program: Path Tracer\n";
@@ -166,16 +88,23 @@ int main(int argc, char* argv[])  {
 
     // image specification
 	//------------------------
-    const int width      = 500; //@Todo: make sure width and height are divisable by two aka even
-    const int height     = width * 9 / 16;
-    const int maxSamples = 20;
+    constexpr auto width      = 1024;
+    constexpr auto height     = width * 9 / 16;
+    constexpr auto aspect     = static_cast<float>(width) / static_cast<float>(height);
+    constexpr auto maxSamples = 1;
+
     const auto outputLocation = "./render.ppm"s;
     bool running = true;
 
     Window window("PathTracer", width, height);
-    Array2D<djc_math::Vec3f, width, height> pixels;
-    Camera cam(djc_math::Vec3f(0,0,3), 70, (float) width / (float)height);
+    Camera cam(djc_math::Vec3f(0,0,3), 70, aspect);
 
+    // resize the pixel vector so it has the storage for [height][width]
+    std::vector<std::vector<djc_math::Vec3f>> pixels;
+    pixels.resize(height);
+    for (int i = 0; i < height; i++) {
+        pixels[i].resize(width);
+    }
 
     // materials -- S= soft | R = reflective
 	//------------------------
@@ -192,34 +121,28 @@ int main(int argc, char* argv[])  {
     world.addSphere(djc_math::Vec3f(0, -100.5, -1), 100, &*metal_RoseGold);
     world.addSphere(djc_math::Vec3f(0, 2.5, -8), 3, &*metal_RoseGold); // ball at back 
 
-    world.addSphere(djc_math::Vec3f(2, 0, -1), 0.5, &*metal_RoseGold);         // right
-    world.addSphere(djc_math::Vec3f(1, 0, -1), 0.5, &*lambert);     // middle right
-    world.addSphere(djc_math::Vec3f(-2, 0, -1), 0.5,&*metal_RoseGold);     // left
-    world.addSphere(djc_math::Vec3f(-1, 0, -1), 0.5,&*lambert);         // middle left
-    world.addSphere(djc_math::Vec3f(0, 0, -1), 0.5, &*glass); // middle ball
-	
-	// render
-	//------------------------
-    auto logicalCoreCount = std::thread::hardware_concurrency();
-    
-    std::cout << "Cores Available: " << logicalCoreCount << "\nMain Thread running...\n";
+    world.addSphere(djc_math::Vec3f( 2, 0, -1), 0.5, &*metal_RoseGold);         // right
+    world.addSphere(djc_math::Vec3f( 1, 0, -1), 0.5, &*lambert);     // middle right
+    world.addSphere(djc_math::Vec3f(-2, 0, -1), 0.5, &*metal_RoseGold);     // left
+    world.addSphere(djc_math::Vec3f(-1, 0, -1), 0.5, &*lambert);         // middle left
+    world.addSphere(djc_math::Vec3f( 0, 0, -1), 0.5, &*glass); // middle ball
 
-    std::vector<std::thread> traceJobs;
+    // new tracing code that allows for easy multithreading
+    //---------------------
+    TraceTaskRange taskRangeOne(0, width, 0, height);
+    TraceTask taskOne(taskRangeOne, maxSamples, world, cam, width, height);
+    auto donePixels = taskOne();
+    pixels = donePixels;
+    std::cout << "done\n";
+    //---------------------
 
-    TraceJob<width, height> job(1, 0, 0, width, height, maxSamples, cam, world, pixels, running);
-    traceJobs.push_back(std::thread(job));
-
-    while(running) {
+    while (running) {
         window.eventLoop(running);
         window.draw(pixels, maxSamples);
     }
     
-    for(auto & job : traceJobs) {
-        job.join();
-    }
-	
 #   if defined(WRITE_OUTPUT_TO_FILE)
-        if(!::writeToFile(outputLocation, maxSamples, pixels)) {
+        if(!::writeToFile(outputLocation, width, height, maxSamples, pixels)) {
                 return -1;
         }
 #   endif
