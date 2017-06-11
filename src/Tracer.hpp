@@ -15,7 +15,7 @@
 #include <cassert>
 
 namespace globals {
-    constexpr int rayDepth = 50;
+    constexpr auto rayDepth = 10;
 }
 
 //---------------------------------------------------------

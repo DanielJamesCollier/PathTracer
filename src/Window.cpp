@@ -36,7 +36,7 @@ Window::Window(std::string const & title, int width, int height)
 }
 
 Window::~Window() {
-    //@todo delete texture
+    // @todo delete texture
     SDL_DestroyRenderer(m_renderer);
     SDL_DestroyWindow(m_window);
 }
@@ -67,13 +67,13 @@ Window::eventLoop(bool & running) {
         for (auto y = 0; y < m_height; y++) { 
             for (auto x = 0; x < m_width; x++) {  
                 djc_math::Vec3f pixel = pixels[y][x];
-                pixel /= static_cast<float>(numSamples);
+                pixel /= static_cast<float>(numSamples);// @todo : move this to the trace function
                 pixel = djc_math::Vec3f(sqrtf(pixel.x), sqrtf(pixel.y), sqrtf(pixel.z));
             
                 m_pixels[index + 0] = static_cast<unsigned char>(255.99 * pixel.z); // blue 
                 m_pixels[index + 1] = static_cast<unsigned char>(255.99 * pixel.y); // green
                 m_pixels[index + 2] = static_cast<unsigned char>(255.99 * pixel.x); // red
-                m_pixels[index + 3] = SDL_ALPHA_OPAQUE;
+                m_pixels[index + 3] = SDL_ALPHA_OPAQUE; // unused alpha
                 index+=4;
             }
         }

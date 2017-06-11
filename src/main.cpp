@@ -30,19 +30,25 @@
 #include <array>
 #include <memory>
 #include <cassert>
+#include <algorithm>
 #include <thread>
+#include <future>
+#include <mutex>
 
 
 // defines
 //----------------------------------------
-#define RAY_DEPTH 50
 //#define WRITE_OUTPUT_TO_FILE
-
+#define RUN_ASYNC
 
 // aliases
 //----------------------------------------
 using namespace std::string_literals;
 using Clock = std::chrono::high_resolution_clock;
+
+// globals
+//----------------------------------------
+std::mutex g_pixelWrite;
 
 //---------------------------------------------------------
 bool writeToFile(std::string fileLocation, int width, int height, int samples, std::vector<std::vector<djc_math::Vec3f>> & pixels) {
@@ -51,10 +57,10 @@ bool writeToFile(std::string fileLocation, int width, int height, int samples, s
 
     // early return
     if(!file.is_open()) {
-        std::cout << "\n\nFile failed to open" << std::endl;
-        std::cout << "--------------------------------------" << std::endl;
-        std::cerr << "file: " << fileLocation << std::endl;
-        std::cout << "\n\n" << std::endl;
+        std::cerr << "\n\nFile failed to open\n";
+        std::cerr << "--------------------------------------\n";
+        std::cerr << "file: " << fileLocation << "\n";
+        std::cerr << "\n\n";
         return false;
     }
 
@@ -75,8 +81,15 @@ bool writeToFile(std::string fileLocation, int width, int height, int samples, s
         }
     }
     file << buffer;
-    std::cout << fileLocation << " written to disk" << std::endl;
+    std::cout << fileLocation << " written to disk\n" << std::flush;
     return true;
+}
+
+//---------------------------------------------------------
+void 
+writePixelsOutOfThread(std::vector<std::vector<djc_math::Vec3f>> & screenPixels, std::vector<std::vector<djc_math::Vec3f>> const & threadLocalPixels, std::size_t location) {
+    std::lock_guard<std::mutex> m(g_pixelWrite);    
+    std::copy_n(threadLocalPixels.begin(), threadLocalPixels.size(), &screenPixels[location]);
 }
 
 //---------------------------------------------------------
@@ -119,22 +132,74 @@ int main(int argc, char* argv[])  {
 	//------------------------
     Scene world;
     world.addSphere(djc_math::Vec3f(0, -100.5, -1), 100, &*metal_RoseGold);
-    world.addSphere(djc_math::Vec3f(0, 2.5, -8), 3, &*metal_RoseGold); // ball at back 
+    world.addSphere(djc_math::Vec3f(0, 2.5, -8), 3, &*metal_RoseGold);  // ball at back 
+    world.addSphere(djc_math::Vec3f( 2, 0, -1), 0.5, &*metal_RoseGold); // right
+    world.addSphere(djc_math::Vec3f( 1, 0, -1), 0.5, &*lambert);        // middle right
+    world.addSphere(djc_math::Vec3f(-2, 0, -1), 0.5, &*metal_RoseGold); // left
+    world.addSphere(djc_math::Vec3f(-1, 0, -1), 0.5, &*lambert);        // middle left
+    world.addSphere(djc_math::Vec3f( 0, 0, -1), 0.5, &*glass);          // middle ball
 
-    world.addSphere(djc_math::Vec3f( 2, 0, -1), 0.5, &*metal_RoseGold);         // right
-    world.addSphere(djc_math::Vec3f( 1, 0, -1), 0.5, &*lambert);     // middle right
-    world.addSphere(djc_math::Vec3f(-2, 0, -1), 0.5, &*metal_RoseGold);     // left
-    world.addSphere(djc_math::Vec3f(-1, 0, -1), 0.5, &*lambert);         // middle left
-    world.addSphere(djc_math::Vec3f( 0, 0, -1), 0.5, &*glass); // middle ball
+#   if defined(RUN_ASYNC) 
+{
+     auto begin = Clock::now();
+    /*
+        /Performance/
 
-    // new tracing code that allows for easy multithreading
-    //---------------------
+        - addidng an extra thread seems to reduce the time by 200ms
+    */
+
+    // thread one
+    TraceTaskRange taskRangeOne(0, width, 0, height / 2);
+    TraceTask taskOne(taskRangeOne, maxSamples, world, cam, width, height);
+    auto taskOnePixels = std::async(std::launch::async, taskOne);
+
+    // thread two
+    TraceTaskRange taskRangeTwo(0, width, height / 2, height);
+    TraceTask taskTwo(taskRangeTwo, maxSamples, world, cam, width, height);
+    auto taskTwoPixels = std::async(std::launch::async, taskTwo);
+
+    // thread three
+    // TraceTaskRange taskRangeThree(0, width, height / 2, height);
+    // TraceTask taskThree(taskRangeThree, maxSamples, world, cam, width, height);
+    // auto taskThreePixels = std::async(std::launch::async, taskTwo);
+   
+
+    // block this thread and wait until the pixels are rendered
+    writePixelsOutOfThread(pixels, taskOnePixels.get(), 0);
+    writePixelsOutOfThread(pixels, taskTwoPixels.get(), height / 2);
+
+    auto end = Clock::now();
+
+    auto passed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    std::cout << "total time: " << passed << "ms\n";
+    std::cout << "samples: " << maxSamples << "\n";
+}
+#   else // run single threaded
+{
     TraceTaskRange taskRangeOne(0, width, 0, height);
     TraceTask taskOne(taskRangeOne, maxSamples, world, cam, width, height);
+
+    /*
+        /Performance Test/
+        
+        time per sample: 756ms 
+        linear scale: yes
+        thread count: 1
+    */
+    auto begin = Clock::now();
+
     auto donePixels = taskOne();
     pixels = donePixels;
+    
+    auto end = Clock::now();
+    auto passed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    std::cout << "total time: " << passed << "ms\n";
+    std::cout << "samples: " << maxSamples << "\n";
+
+    
     std::cout << "done\n";
-    //---------------------
+}
+#   endif
 
     while (running) {
         window.eventLoop(running);
