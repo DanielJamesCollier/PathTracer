@@ -63,8 +63,9 @@ public: // free function operator overloads - defined in Vec3.inl
 public: // free function operator overload for use with other classes - defined in Vec3.inl
     // Vec3<T> operator * (Mat3<T> const & lhs, Vec3<T> const & rhs); - defined in Mat3.inl
 
-public: // FREE FUNCTIONS
+public: // free functions
     // Vec3<T> normalise(Vec3<T> const & vec);
+    // T dot(Vec3<T> const & lhs, Vec3<T> const & rhs);
 
 public: // public data
     T x;

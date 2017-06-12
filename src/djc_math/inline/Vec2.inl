@@ -215,5 +215,4 @@ dot(Vec2<T> const & lhs, Vec2<T> const & rhs) {
     return (lhs.x * rhs.x) + (lhs.y * rhs.y);
 }
 
-
 } /* namespace djc_math */

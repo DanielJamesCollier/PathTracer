@@ -105,7 +105,7 @@ int main(int argc, char* argv[])  {
     constexpr auto width      = 384;
     constexpr auto height     = width * 9 / 16;
     constexpr auto aspect     = static_cast<float>(width) / static_cast<float>(height);
-    constexpr auto maxSamples = 100;
+    constexpr auto maxSamples = 1;
 
     const auto outputLocation = "./render.ppm"s;
     bool running = true;

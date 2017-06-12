@@ -264,5 +264,4 @@ dot(Vec4<T> const & lhs, Vec4<T> const & rhs) {
     return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z) + (lhs.w * rhs.w);
 }
 
-
 } /* namespace djc_math */
