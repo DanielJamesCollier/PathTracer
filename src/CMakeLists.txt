@@ -1,4 +1,4 @@
 set (SOURCEFILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDL_Module.cpp
     PARENT_SCOPE)

@@ -1,7 +1,7 @@
-#include "Window.hpp"
+#include "SDL_Module.hpp"
 
 
-Window::Window(std::string const & title, int width, int height) 
+SDL_Module::SDL_Module(std::string const & title, int width, int height) 
 :   m_x(-1)
 ,   m_y(-1)
 ,   m_width(width)
@@ -35,14 +35,14 @@ Window::Window(std::string const & title, int width, int height)
     SDL_RenderPresent(m_renderer);
 }
 
-Window::~Window() {
+SDL_Module::~SDL_Module() {
     // @todo delete texture
     SDL_DestroyRenderer(m_renderer);
     SDL_DestroyWindow(m_window);
 }
 
 void
-Window::eventLoop(bool & running) {
+SDL_Module::eventLoop(bool & running) {
     /* Check for new events */
     while (SDL_PollEvent(&m_event)) {
         /* If a quit event has been sent */
@@ -55,7 +55,7 @@ Window::eventLoop(bool & running) {
 }
 
  void 
- Window::draw(std::vector<std::vector<djc_math::Vec3f>> const & pixels, int numSamples) {
+SDL_Module::draw(std::vector<std::vector<djc_math::Vec3f>> const & pixels, int numSamples) {
 
         /*
         - convert data from a std::vector<std::vector<djc_math::Vec3f>> to  std::vector<unsigned char>;

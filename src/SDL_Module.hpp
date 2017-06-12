@@ -14,7 +14,7 @@
 #include <vector>
 
 
-class Window final {
+class SDL_Module final {
 
     int m_width;
     int m_height;
@@ -27,12 +27,12 @@ class Window final {
     std::vector<unsigned char> m_pixels;
 
 public:
-    Window(std::string const & title, int width, int height);
-    ~Window();
+    SDL_Module(std::string const & title, int width, int height);
+    ~SDL_Module();
 
     void eventLoop(bool & running);
     void draw(std::vector<std::vector<djc_math::Vec3f>> const & pixels, int numSamples);
-    
+
 };
 
 #endif /* Window_hpp */

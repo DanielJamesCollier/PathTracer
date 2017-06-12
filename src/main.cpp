@@ -12,7 +12,7 @@
 #include "Camera.hpp"
 #include "Utils.hpp"
 #include "Scene.hpp"
-#include "Window.hpp"
+#include "SDL_Module.hpp"
 #include "MutexPrint.hpp"
 #include "Tracer.hpp"
 
@@ -104,19 +104,19 @@ int main(int argc, char* argv[])  {
     constexpr auto width      = 1024;
     constexpr auto height     = width * 9 / 16;
     constexpr auto aspect     = static_cast<float>(width) / static_cast<float>(height);
-    constexpr auto maxSamples = 1;
+    constexpr auto maxSamples = 10;
 
     const auto outputLocation = "./render.ppm"s;
     bool running = true;
 
-    Window window("PathTracer", width, height);
+    SDL_Module sdl("PathTracer", width, height);
     Camera cam(djc_math::Vec3f(0,0,3), 70, aspect);
 
     // resize the pixel vector so it has the storage for [height][width]
     std::vector<std::vector<djc_math::Vec3f>> pixels;
     pixels.resize(height);
-    for (int i = 0; i < height; i++) {
-        pixels[i].resize(width);
+    for (auto && row : pixels) {
+        row.resize(width);
     }
 
     // materials -- S= soft | R = reflective
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])  {
 
     auto donePixels = taskOne();
     pixels = donePixels;
-    
+
     auto end = Clock::now();
     auto passed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
     std::cout << "total time: " << passed << "ms\n";
@@ -202,8 +202,8 @@ int main(int argc, char* argv[])  {
 #   endif
 
     while (running) {
-        window.eventLoop(running);
-        window.draw(pixels, maxSamples);
+        sdl.eventLoop(running);
+        sdl.draw(pixels, maxSamples);
     }
     
 #   if defined(WRITE_OUTPUT_TO_FILE)
