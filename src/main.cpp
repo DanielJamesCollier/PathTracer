@@ -38,20 +38,21 @@
 
 // defines
 //----------------------------------------
-//#define WRITE_OUTPUT_TO_FILE
+#define WRITE_OUTPUT_TO_FILE
 #define RUN_ASYNC
 
 // aliases
 //----------------------------------------
 using namespace std::string_literals;
 using Clock = std::chrono::high_resolution_clock;
+using PixelStorage = std::vector<std::vector<djc_math::Vec3f>>;
 
 // globals
 //----------------------------------------
 std::mutex g_pixelWrite;
 
 //---------------------------------------------------------
-bool writeToFile(std::string fileLocation, int width, int height, int samples, std::vector<std::vector<djc_math::Vec3f>> & pixels) {
+bool writeToFile(std::string fileLocation, int width, int height, int samples, PixelStorage & pixels) {
     std::ofstream file;
     file.open(fileLocation);
 
@@ -87,24 +88,24 @@ bool writeToFile(std::string fileLocation, int width, int height, int samples, s
 
 //---------------------------------------------------------
 void 
-writePixelsOutOfThread(std::vector<std::vector<djc_math::Vec3f>> & screenPixels, std::vector<std::vector<djc_math::Vec3f>> const & threadLocalPixels, std::size_t location) {
+writePixelsOutOfThread(PixelStorage & screenPixels, PixelStorage const & threadLocalPixels, std::size_t location) {
     std::lock_guard<std::mutex> m(g_pixelWrite);    
     std::copy_n(threadLocalPixels.begin(), threadLocalPixels.size(), &screenPixels[location]);
 }
 
 //---------------------------------------------------------
 int main(int argc, char* argv[])  {
-    std::cout << "-----------------------------\n";
+    std::cout << "\n-----------------------------\n";
     std::cout << "Program: Path Tracer\n";
     std::cout << "Programmer: Daniel James Collier\n";
-    std::cout << "-----------------------------\n";
+    std::cout << "-----------------------------\n\n";
 
     // image specification
 	//------------------------
-    constexpr auto width      = 1024;
+    constexpr auto width      = 384;
     constexpr auto height     = width * 9 / 16;
     constexpr auto aspect     = static_cast<float>(width) / static_cast<float>(height);
-    constexpr auto maxSamples = 10;
+    constexpr auto maxSamples = 100;
 
     const auto outputLocation = "./render.ppm"s;
     bool running = true;
@@ -113,7 +114,7 @@ int main(int argc, char* argv[])  {
     Camera cam(djc_math::Vec3f(0,0,3), 70, aspect);
 
     // resize the pixel vector so it has the storage for [height][width]
-    std::vector<std::vector<djc_math::Vec3f>> pixels;
+    PixelStorage pixels;
     pixels.resize(height);
     for (auto && row : pixels) {
         row.resize(width);
@@ -139,66 +140,81 @@ int main(int argc, char* argv[])  {
     world.addSphere(djc_math::Vec3f(-1, 0, -1), 0.5, &*lambert);        // middle left
     world.addSphere(djc_math::Vec3f( 0, 0, -1), 0.5, &*glass);          // middle ball
 
-#   if defined(RUN_ASYNC) 
-{
-     auto begin = Clock::now();
-    /*
-        /Performance/
+     auto singleThreaded = [&]() {
+        std::cout << "Log\n";
+        std::cout << "-----------------------------\n";
+        std::cout << "multiple threads not detected. running single threaded\n";
+        TraceTaskRange taskRangeOne(0, width, 0, height);
+        TraceTask taskOne(taskRangeOne, maxSamples, world, cam, width, height);
 
-        - addidng an extra thread seems to reduce the time by 200ms
-    */
+        auto begin = Clock::now();
 
-    // thread one
-    TraceTaskRange taskRangeOne(0, width, 0, height / 2);
-    TraceTask taskOne(taskRangeOne, maxSamples, world, cam, width, height);
-    auto taskOnePixels = std::async(std::launch::async, taskOne);
+        auto donePixels = taskOne();
+        pixels = donePixels;
 
-    // thread two
-    TraceTaskRange taskRangeTwo(0, width, height / 2, height);
-    TraceTask taskTwo(taskRangeTwo, maxSamples, world, cam, width, height);
-    auto taskTwoPixels = std::async(std::launch::async, taskTwo);
-
-    // thread three
-    // TraceTaskRange taskRangeThree(0, width, height / 2, height);
-    // TraceTask taskThree(taskRangeThree, maxSamples, world, cam, width, height);
-    // auto taskThreePixels = std::async(std::launch::async, taskTwo);
+        auto end = Clock::now();
+        auto passed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        std::cout << "total time: " << passed << "ms\n";
+        std::cout << "samples: " << maxSamples << "\n\n";
+    };
    
 
-    // block this thread and wait until the pixels are rendered
-    writePixelsOutOfThread(pixels, taskOnePixels.get(), 0);
-    writePixelsOutOfThread(pixels, taskTwoPixels.get(), height / 2);
+#   if defined(RUN_ASYNC) 
+    {
+        auto threadCount = std::thread::hardware_concurrency(); // can return 0 in some cases
+        if(threadCount == 0) threadCount = 1;
 
-    auto end = Clock::now();
+        if(threadCount >= 2) {
+            threadCount -= 1; // if computer has 4 threads launch 3 because main thread means 4 will be running
+            std::cout << "Log\n";
+            std::cout << "-----------------------------\n";
+            std::cout << "threads: " << threadCount << " for tracing + 1 main thread\n";
 
-    auto passed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-    std::cout << "total time: " << passed << "ms\n";
-    std::cout << "samples: " << maxSamples << "\n";
-}
+            std::vector<std::future<PixelStorage>> futurePixels;
+            futurePixels.reserve(threadCount);
+
+            int heightStep = height / threadCount;
+            int currentStep = heightStep;
+            int lastStep = heightStep;
+
+            TraceTaskRange rangeOne(0, width, 0, currentStep);
+            TraceTask taskOne(rangeOne, maxSamples, world, cam, width, height);
+            futurePixels.push_back(std::async(std::launch::async, taskOne)); // launch trace in another thread
+         
+            for (int i = 0; i < threadCount; i ++) {
+
+                currentStep += heightStep;
+
+                TraceTaskRange rangeOne(0, width, lastStep, currentStep);
+
+                TraceTask taskOne(rangeOne, maxSamples, world, cam, width, height);
+                futurePixels.push_back(std::async(std::launch::async, taskOne)); // launch trace in another thread
+                
+                lastStep = currentStep;
+            }
+
+            auto begin = Clock::now();
+
+            currentStep = 0;   
+            // wait for the thread finish copying the local pixels into the main pixel array
+            for (int i = 0; i < threadCount; i++) {
+                writePixelsOutOfThread(pixels, futurePixels[i].get(), currentStep); // block until trace is done
+                currentStep += heightStep;
+            }
+
+            auto end = Clock::now();
+            auto passed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+            std::cout << "total time: " << passed << "ms\n";
+            std::cout << "samples: " << maxSamples << "\n\n";
+            
+        } else {
+            singleThreaded();
+        }
+    }
 #   else // run single threaded
-{
-    TraceTaskRange taskRangeOne(0, width, 0, height);
-    TraceTask taskOne(taskRangeOne, maxSamples, world, cam, width, height);
-
-    /*
-        /Performance Test/
-        
-        time per sample: 756ms 
-        linear scale: yes
-        thread count: 1
-    */
-    auto begin = Clock::now();
-
-    auto donePixels = taskOne();
-    pixels = donePixels;
-
-    auto end = Clock::now();
-    auto passed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-    std::cout << "total time: " << passed << "ms\n";
-    std::cout << "samples: " << maxSamples << "\n";
-
-    
-    std::cout << "done\n";
-}
+    {
+        singleThreaded();
+    }
 #   endif
 
     while (running) {
